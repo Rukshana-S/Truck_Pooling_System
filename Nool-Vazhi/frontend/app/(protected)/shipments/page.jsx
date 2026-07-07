@@ -174,6 +174,98 @@ export default function Shipments() {
     }
   };
 
+  const handlePayFinal = async (shipment) => {
+    try {
+      const finalAmount = Math.round(shipment.cost.total * 0.9);
+      let payload = null;
+
+      try {
+        const getRes = await paymentAPI.getForShipment(shipment._id);
+        const payments = getRes.data.data || [];
+        const existingFinal = payments.find(p => p.type === 'Final' && (p.status === 'Pending Final Payment' || p.status === 'Fully Paid'));
+        
+        // Don't recreate if already paid
+        if (existingFinal && existingFinal.status === 'Fully Paid') {
+          toast.error('Payment already completed.');
+          return;
+        }
+        
+        if (existingFinal && existingFinal.razorpayOrderId) {
+          payload = {
+            payment: existingFinal,
+            razorpayOrder: {
+              id: existingFinal.razorpayOrderId,
+              amount: existingFinal.amount * 100
+            }
+          };
+        }
+      } catch (getErr) {
+        console.error('Error checking existing payments:', getErr);
+      }
+
+      if (!payload) {
+        try {
+          const { data: apiResponse } = await paymentAPI.create({
+            shipmentId: shipment._id,
+            amount: finalAmount,
+            type: 'Final'
+          });
+          payload = apiResponse.data;
+        } catch (createErr) {
+          if (createErr.response?.status === 409 && createErr.response?.data?.existingPayment) {
+            const existing = createErr.response.data.existingPayment;
+            payload = {
+              payment: existing,
+              razorpayOrder: {
+                id: existing.razorpayOrderId,
+                amount: existing.amount * 100
+              }
+            };
+          } else {
+            throw createErr;
+          }
+        }
+      }
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_TAbp16UZYjRwe5',
+        amount: payload.razorpayOrder.amount,
+        currency: 'INR',
+        name: 'Nool-Vazhi',
+        description: `Final Payment for Shipment ${shipment.shipmentId}`,
+        order_id: payload.razorpayOrder.id,
+        handler: async function (response) {
+          try {
+            await paymentAPI.verify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              paymentId: payload.payment._id,
+              status: 'Fully Paid'
+            });
+            toast.success('Final payment successful!');
+            fetchShipments();
+          } catch (verifyErr) {
+            toast.error(verifyErr.response?.data?.message || 'Payment verification failed');
+          }
+        },
+        prefill: {
+          name: user?.businessName || user?.name || '',
+          email: user?.email || '',
+          contact: user?.phone || ''
+        },
+        theme: {
+          color: '#1E3A8A'
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to initiate payment');
+    }
+  };
+
   const statuses = ['All', 'Pickup Confirmed', 'In Transit', 'Out for Delivery', 'Delivered', 'Pending', 'Cancelled'];
   const filtered = filter === 'All' ? shipments : shipments.filter(s => s.status === filter);
 
@@ -282,6 +374,18 @@ export default function Shipments() {
                           <i className="fa-solid fa-circle-check" style={{ marginRight: 6 }}></i>
                           {s.status}
                         </span>
+                        
+                        {s.status === 'Delivered' && s.paymentStatus === 'Fully Paid' && (
+                          <span style={{ color: '#10b981', background: '#d1fae5', padding: '4px 8px', borderRadius: '4px', fontWeight: 600, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <i className="fa-solid fa-check-double"></i> Fully Paid
+                          </span>
+                        )}
+                        {s.status === 'Delivered' && s.paymentStatus !== 'Fully Paid' && (
+                          <span style={{ color: '#f59e0b', background: '#fef3c7', padding: '4px 8px', borderRadius: '4px', fontWeight: 600, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <i className="fa-solid fa-hourglass-half"></i> Pending Final Payment
+                          </span>
+                        )}
+
                         {s.status === 'Delivered' && (
                           <Link href={`/driver-trips/return-loads?location=${encodeURIComponent(s.drop)}`}>
                             <button className="btn-primary" style={{ padding: '6px 14px', fontSize: 12, background: '#F97316', border: 'none' }}>
@@ -301,6 +405,11 @@ export default function Shipments() {
                       {s.driver && s.paymentStatus === 'Pending Advance' && (
                         <button className="btn-primary" style={{ padding: '8px 20px', fontSize: 13, background: '#10b981', border: 'none' }} onClick={() => handlePayAdvance(s)}>
                           <i className="fa-solid fa-credit-card"></i> Pay Advance (10%)
+                        </button>
+                      )}
+                      {s.status === 'Delivered' && s.paymentStatus !== 'Fully Paid' && (
+                        <button className="btn-primary" style={{ padding: '8px 20px', fontSize: 13, background: '#10b981', border: 'none' }} onClick={() => handlePayFinal(s)}>
+                          <i className="fa-solid fa-credit-card"></i> Pay Remaining (90%)
                         </button>
                       )}
                       {!s.driver && s.status === 'Pending' && (

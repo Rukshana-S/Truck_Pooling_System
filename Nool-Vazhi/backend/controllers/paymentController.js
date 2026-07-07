@@ -256,6 +256,20 @@ const verifyRazorpayPayment = async (req, res) => {
         });
         io.to(payment.driverId.toString()).emit('notification', notification);
       }
+    } else if (status === 'Fully Paid') {
+      const io = req.app.get('io');
+      if (io) {
+        const Notification = require('../models/Notification');
+        const notification = await Notification.create({
+          userId: payment.driverId,
+          title: 'Final Payment Received',
+          message: `The shipper has paid the final amount (90%) for the shipment.`,
+          type: 'Payment',
+          relatedId: payment.shipmentId,
+          onModel: 'Shipment'
+        });
+        io.to(payment.driverId.toString()).emit('notification', notification);
+      }
     }
 
     return res.json({ success: true, message: 'Payment verified successfully.', data: updatedPayment });
