@@ -87,36 +87,84 @@ const getShipmentById = async (req, res) => {
 const updateShipmentStatus = async (req, res) => {
   const { status, currentLocation, note } = req.body;
   try {
-    const shipment = await Shipment.findOne({ _id: req.params.id, isDeleted: { $ne: true } });
+    const shipment = await Shipment.findOne({ _id: req.params.id || req.params.shipmentId, isDeleted: { $ne: true } });
     if (!shipment) return res.status(404).json({ message: 'Not found' });
-    shipment.status = status;
-    if (currentLocation) shipment.currentLocation = currentLocation;
-    shipment.timeline.push({ status, note: note || status });
+
+    const ADVANCED_STATUS_ORDER = [
+      'Pending',
+      'Accepted',
+      'Advance Paid',
+      'Pickup Started',
+      'Loaded',
+      'In Transit',
+      'Near Destination',
+      'Delivered',
+      'Final Payment Completed'
+    ];
+
+    const isNewStatus = ADVANCED_STATUS_ORDER.includes(status);
+    const isOldStatus = ['Pending', 'Pickup Confirmed', 'In Transit', 'Out for Delivery', 'Delivered', 'Cancelled'].includes(status);
+
+    if (!isNewStatus && !isOldStatus) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    // Apply New Advanced Tracking Rules
+    if (isNewStatus) {
+      const newIndex = ADVANCED_STATUS_ORDER.indexOf(status);
+      const currentIndex = ADVANCED_STATUS_ORDER.indexOf(shipment.currentStatus || 'Pending');
+
+      if (newIndex < currentIndex) {
+        return res.status(400).json({ message: 'Cannot transition backward in status' });
+      }
+      if (newIndex === currentIndex) {
+        return res.status(400).json({ message: 'Duplicate consecutive status' });
+      }
+
+      shipment.currentStatus = status;
+      shipment.statusUpdatedAt = Date.now();
+      shipment.trackingHistory.push({
+        status,
+        note: note || status,
+        timestamp: Date.now()
+      });
+    }
+
+    // Apply Old Timeline Rules
+    if (isOldStatus) {
+      shipment.status = status;
+      if (currentLocation) shipment.currentLocation = currentLocation;
+      shipment.timeline.push({ status, note: note || status });
+    }
+
     await shipment.save();
     res.json(shipment);
     
-    if (status === 'Delivered') {
-      await createNotification(req, [shipment.shipper, shipment.driver], {
-        title: 'Shipment Delivered',
-        message: `Shipment to ${shipment.drop} has been delivered successfully.`,
-        type: 'SUCCESS',
-        category: 'Shipments',
-        priority: 'High',
-        relatedEntityId: shipment._id,
-        entityType: 'Shipment',
-        link: '/shipments'
-      });
-    } else {
-      await createNotification(req, shipment.shipper, {
-        title: `Shipment ${status}`,
-        message: `Shipment status updated to ${status}.`,
-        type: 'INFO',
-        category: 'Shipments',
-        priority: 'Medium',
-        relatedEntityId: shipment._id,
-        entityType: 'Shipment',
-        link: '/shipments'
-      });
+    // Notifications logic (only trigger once for overlapping statuses)
+    if (isOldStatus || isNewStatus) {
+      if (status === 'Delivered') {
+        await createNotification(req, [shipment.shipper, shipment.driver].filter(Boolean), {
+          title: 'Shipment Delivered',
+          message: `Shipment to ${shipment.drop} has been delivered successfully.`,
+          type: 'SUCCESS',
+          category: 'Shipments',
+          priority: 'High',
+          relatedEntityId: shipment._id,
+          entityType: 'Shipment',
+          link: '/shipments'
+        });
+      } else {
+        await createNotification(req, shipment.shipper, {
+          title: `Shipment ${status}`,
+          message: `Shipment status updated to ${status}.`,
+          type: 'INFO',
+          category: 'Shipments',
+          priority: 'Medium',
+          relatedEntityId: shipment._id,
+          entityType: 'Shipment',
+          link: '/shipments'
+        });
+      }
     }
   } catch (err) {
     res.status(500).json({ message: err.message });

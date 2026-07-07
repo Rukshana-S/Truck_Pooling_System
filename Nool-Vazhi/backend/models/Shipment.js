@@ -33,6 +33,30 @@ const shipmentSchema = new mongoose.Schema(
         note: String,
       },
     ],
+    // New Advanced Tracking Fields (Phase 1)
+    currentStatus: {
+      type: String,
+      enum: [
+        'Pending',
+        'Accepted',
+        'Advance Paid',
+        'Pickup Started',
+        'Loaded',
+        'In Transit',
+        'Near Destination',
+        'Delivered',
+        'Final Payment Completed'
+      ],
+      default: 'Pending'
+    },
+    trackingHistory: [
+      {
+        status: String,
+        timestamp: { type: Date, default: Date.now },
+        note: String,
+      }
+    ],
+    statusUpdatedAt: { type: Date, default: Date.now },
     currentLocation: { type: String, default: '' },
     estimatedDelivery: { type: Date },
     isDeleted: { type: Boolean, default: false },
