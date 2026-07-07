@@ -1,0 +1,11 @@
+node_modules/
+.env
+.env.local
+.env.production
+npm-debug.log*
+build/
+dist/
+.history/
+
+.next/
+node_modules/

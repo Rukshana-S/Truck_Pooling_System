@@ -1,0 +1,28 @@
+import './globals.css';
+import { AuthProvider } from '@/context/AuthContext';
+import { Toaster } from 'react-hot-toast';
+
+import { NotificationProvider } from '@/context/NotificationContext';
+
+export const metadata = {
+  title: 'Nool-Vazhi - Logistics Operations Platform',
+  description: 'A revolutionary SaaS platform optimizing truck pooling, shipping, and supply chain logistics.',
+};
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+      </head>
+      <body suppressHydrationWarning>
+        <AuthProvider>
+          <NotificationProvider>
+            <Toaster position="top-right" />
+            {children}
+          </NotificationProvider>
+        </AuthProvider>
+      </body>
+    </html>
+  );
+}
