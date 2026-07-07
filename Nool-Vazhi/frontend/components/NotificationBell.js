@@ -89,34 +89,48 @@ export default function NotificationBell({ collapsed }) {
         animation: 'slideDownFade 0.2s ease-out'
       }}>
       <div style={{ padding: '16px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', borderTopLeftRadius: 12, borderTopRightRadius: 12, flexShrink: 0 }}>
-        <h4 style={{ margin: 0, fontSize: 15, color: '#1e293b' }}>Notifications</h4>
-        {unreadCount > 0 && <button onClick={markAsRead} style={{ background: 'none', border: 'none', color: '#F97316', fontSize: 12, cursor: 'pointer', fontWeight: 600 }}>Mark all read</button>}
+        <h4 style={{ margin: 0, fontSize: 16, color: '#1e293b', fontWeight: 800 }}>Notifications</h4>
+        {unreadCount > 0 && (
+          <button 
+            onClick={(e) => { e.stopPropagation(); markAsRead(); }} 
+            style={{ background: '#F97316', border: 'none', color: 'white', fontSize: 11, padding: '4px 10px', borderRadius: 20, cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+            className="hover-opacity"
+          >
+            <i className="fa-solid fa-check-double"></i> Mark all read
+          </button>
+        )}
       </div>
       
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {displayNotifications.length === 0 ? (
-          <div style={{ padding: '40px 20px', textAlign: 'center', color: '#64748b', fontSize: 13, lineHeight: 1.5 }}>
-            <div style={{ fontWeight: 600, color: '#1e293b', marginBottom: 4 }}>No notifications yet.</div>
-            Notifications will appear here when shipments, auctions, bids, deliveries, payments, or return-load events occur.
+          <div style={{ padding: '60px 20px', textAlign: 'center', color: '#64748b', fontSize: 13, lineHeight: 1.6 }}>
+            <i className="fa-regular fa-bell-slash" style={{ fontSize: 48, color: '#cbd5e1', marginBottom: 16 }}></i>
+            <div style={{ fontWeight: 800, color: '#1e293b', marginBottom: 6, fontSize: 16 }}>You&apos;re all caught up!</div>
+            New updates about your shipments and payments will appear here.
           </div>
         ) : (
           displayNotifications.map(n => (
-            <div key={n._id} onClick={() => handleNotificationClick(n)} style={{ padding: '14px 16px', borderBottom: '1px solid #f1f5f9', background: n.read ? 'white' : '#eff6ff', display: 'flex', gap: 12, cursor: 'pointer', transition: 'background 0.2s' }} className="hover:bg-gray-50">
+            <div key={n._id} onClick={() => handleNotificationClick(n)} style={{ padding: '16px', borderBottom: '1px solid #f1f5f9', background: n.read ? 'white' : '#fff7ed', display: 'flex', gap: 14, cursor: 'pointer', transition: 'all 0.2s' }} className="notif-item">
               <div style={{ 
-                width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 14,
                 background: n.type === 'SUCCESS' ? '#dcfce7' : n.type === 'WARNING' ? '#fef3c7' : n.type === 'ERROR' ? '#fee2e2' : '#e0e7ff',
                 color: n.type === 'SUCCESS' ? '#16a34a' : n.type === 'WARNING' ? '#d97706' : n.type === 'ERROR' ? '#dc2626' : '#4f46e5',
+                boxShadow: n.read ? 'none' : '0 0 0 4px white, 0 0 0 6px #fed7aa'
               }}>
                 <i className={`fa-solid ${n.type === 'SUCCESS' ? 'fa-check' : n.type === 'WARNING' ? 'fa-triangle-exclamation' : n.type === 'ERROR' ? 'fa-xmark' : 'fa-info'}`}></i>
               </div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', marginBottom: 2 }}>{n.title}</div>
-                <div style={{ fontSize: 12, color: '#64748b', lineHeight: 1.4 }}>{n.message}</div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
-                  <div style={{ fontSize: 11, color: '#94a3b8' }}>{new Date(n.createdAt).toLocaleString()}</div>
-                  {n.priority === 'High' && <div style={{ fontSize: 10, color: '#ef4444', fontWeight: 700, background: '#fee2e2', padding: '2px 6px', borderRadius: 4 }}>🔴 High</div>}
-                  {n.priority === 'Medium' && <div style={{ fontSize: 10, color: '#f97316', fontWeight: 700, background: '#ffedd5', padding: '2px 6px', borderRadius: 4 }}>🟠 Medium</div>}
-                  {n.priority === 'Low' && <div style={{ fontSize: 10, color: '#22c55e', fontWeight: 700, background: '#dcfce7', padding: '2px 6px', borderRadius: 4 }}>🟢 Low</div>}
+              <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ fontSize: 14, fontWeight: n.read ? 600 : 800, color: '#0F172A', marginBottom: 4 }}>{n.title}</div>
+                  {!n.read && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#F97316' }}></div>}
+                </div>
+                <div style={{ fontSize: 13, color: '#475569', lineHeight: 1.5, marginBottom: 8 }}>{n.message}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontSize: 11, color: '#94a3b8', fontWeight: 600 }}>
+                    <i className="fa-regular fa-clock" style={{ marginRight: 4 }}></i>
+                    {new Date(n.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  </div>
+                  {n.priority === 'High' && <div style={{ fontSize: 10, color: '#ef4444', fontWeight: 800, background: '#fee2e2', padding: '3px 8px', borderRadius: 6, textTransform: 'uppercase' }}>High</div>}
                 </div>
               </div>
             </div>
@@ -176,6 +190,13 @@ export default function NotificationBell({ collapsed }) {
         @keyframes slideDownFade {
           from { opacity: 0; transform: translateY(-10px) scale(0.98); }
           to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .notif-item:hover {
+          background: #f8fafc !important;
+        }
+        .hover-opacity:hover {
+          opacity: 0.9;
+          transform: scale(0.98);
         }
         @media (max-width: 768px) {
           /* On mobile, adjust the portal to be centered or full width if needed */

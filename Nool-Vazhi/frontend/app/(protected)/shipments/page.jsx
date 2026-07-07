@@ -11,14 +11,33 @@ import { toast } from 'react-hot-toast';
 
 const statusClass = {
   Pending: 'badge-pending',
+  'Pickup Confirmed': 'badge-transit',
   'In Transit': 'badge-transit',
+  'Out for Delivery': 'badge-transit',
   Delivered: 'badge-delivered',
   Cancelled: 'badge-cancelled',
-  'Pickup Confirmed': 'badge-transit',
-  'Out for Delivery': 'badge-transit',
 };
 
+const STATUS_STAGES = [
+  { label: 'Pending', icon: 'fa-box' },
+  { label: 'Pickup Confirmed', icon: 'fa-truck-loading' },
+  { label: 'In Transit', icon: 'fa-truck-fast' },
+  { label: 'Out for Delivery', icon: 'fa-route' },
+  { label: 'Delivered', icon: 'fa-house-circle-check' }
+];
+
 const STATUS_OPTIONS = ['Pickup Confirmed', 'In Transit', 'Out for Delivery', 'Delivered'];
+
+// Helper to determine if a stage is completed or active
+const getStageState = (currentStatus, stageLabel) => {
+  if (currentStatus === 'Cancelled') return 'cancelled';
+  const currentIndex = STATUS_STAGES.findIndex(s => s.label === currentStatus);
+  const stageIndex = STATUS_STAGES.findIndex(s => s.label === stageLabel);
+  
+  if (stageIndex < currentIndex) return 'completed';
+  if (stageIndex === currentIndex) return 'active';
+  return 'pending';
+};
 
 export default function Shipments() {
   const { user } = useAuth();
@@ -329,7 +348,39 @@ export default function Shipments() {
                       <span style={styles.city}>{s.drop}</span>
                     </div>
                   </div>
-                  <span className={`badge ${statusClass[s.status] || 'badge-pending'}`}>{s.status}</span>
+                  {s.status === 'Cancelled' ? (
+                    <span className="badge badge-cancelled">Cancelled</span>
+                  ) : (
+                    <div style={styles.timelineContainer}>
+                      {STATUS_STAGES.map((stage, index) => {
+                        const state = getStageState(s.status, stage.label);
+                        return (
+                          <div key={stage.label} style={styles.timelineStep}>
+                            <div style={{
+                              ...styles.timelineIcon,
+                              ...(state === 'completed' ? styles.timelineIconCompleted : {}),
+                              ...(state === 'active' ? styles.timelineIconActive : {})
+                            }}>
+                              <i className={`fa-solid ${stage.icon}`}></i>
+                            </div>
+                            <div style={{
+                              ...styles.timelineLabel,
+                              ...(state === 'completed' ? styles.timelineLabelCompleted : {}),
+                              ...(state === 'active' ? styles.timelineLabelActive : {})
+                            }}>
+                              {stage.label}
+                            </div>
+                            {index < STATUS_STAGES.length - 1 && (
+                              <div style={{
+                                ...styles.timelineLine,
+                                ...(state === 'completed' ? styles.timelineLineCompleted : {})
+                              }}></div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 <div style={styles.shipMeta}>
@@ -523,6 +574,16 @@ const styles = {
   metaItem: { display: 'flex', flexDirection: 'column', gap: 2 },
   metaLabel: { fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' },
   shipActions: { display: 'flex', gap: 10, alignItems: 'center' },
+  timelineContainer: { display: 'flex', alignItems: 'center', gap: 4, minWidth: 400 },
+  timelineStep: { display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', flex: 1 },
+  timelineIcon: { width: 32, height: 32, borderRadius: 16, background: '#f1f5f9', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, zIndex: 2, border: '2px solid white' },
+  timelineIconActive: { background: '#1E3A8A', color: 'white', boxShadow: '0 0 0 3px #bfdbfe' },
+  timelineIconCompleted: { background: '#22c55e', color: 'white' },
+  timelineLabel: { fontSize: 10, fontWeight: 600, color: '#94a3b8', marginTop: 6, textAlign: 'center', whiteSpace: 'nowrap' },
+  timelineLabelActive: { color: '#1E3A8A', fontWeight: 700 },
+  timelineLabelCompleted: { color: '#22c55e' },
+  timelineLine: { position: 'absolute', top: 16, left: '50%', width: '100%', height: 3, background: '#f1f5f9', zIndex: 1 },
+  timelineLineCompleted: { background: '#22c55e' },
   modalOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 },
   modalCard: { background: 'white', borderRadius: 16, padding: 32, width: '100%', maxWidth: 440, boxShadow: '0 20px 60px rgba(0,0,0,0.3)' },
   modalTitle: { fontSize: 18, fontWeight: 700, color: '#1e293b', marginBottom: 6, display: 'flex', alignItems: 'center' },

@@ -10,6 +10,21 @@ import { jsPDF } from 'jspdf';
 import ReceiptPDF from '@/components/ReceiptPDF';
 import ReportTemplate from '@/components/ReportTemplate';
 
+// Helper for the visual Payment Timeline
+const getPaymentStages = (payment) => {
+  const isAdvancePaid = payment.type === 'Advance' && payment.status !== 'Pending Advance' || payment.shipmentId?.paymentStatus !== 'Pending Advance';
+  const isDelivered = payment.shipmentId?.status === 'Delivered';
+  const isFullyPaid = payment.shipmentId?.paymentStatus === 'Fully Paid' || (payment.type === 'Final' && payment.status === 'Fully Paid');
+
+  return [
+    { label: 'Shipment Created', icon: 'fa-box', state: 'completed' },
+    { label: 'Advance Paid', icon: 'fa-money-bill-wave', state: isAdvancePaid ? 'completed' : 'active' },
+    { label: 'In Transit', icon: 'fa-truck-fast', state: isDelivered ? 'completed' : (isAdvancePaid ? 'active' : 'pending') },
+    { label: 'Delivered', icon: 'fa-house-circle-check', state: isDelivered ? 'completed' : 'pending' },
+    { label: 'Final Payment', icon: 'fa-check-double', state: isFullyPaid ? 'completed' : (isDelivered ? 'active' : 'pending') }
+  ];
+};
+
 export default function PaymentsDashboard() {
   const { user } = useAuth();
   const isDriver = user?.role === 'driver';
@@ -322,6 +337,37 @@ export default function PaymentsDashboard() {
                   <span style={{ ...styles.detailValue, fontFamily: 'monospace', fontSize: 12 }}>{selectedPayment.razorpayPaymentId}</span>
                 </div>
               )}
+
+              {/* Visual Payment Timeline */}
+              <div style={{ marginTop: 24 }}>
+                <h4 style={{ fontSize: 13, color: '#64748b', textTransform: 'uppercase', marginBottom: 16 }}>Payment Lifecycle</h4>
+                <div style={styles.timelineContainer}>
+                  {getPaymentStages(selectedPayment).map((stage, index, arr) => (
+                    <div key={stage.label} style={styles.timelineStep}>
+                      <div style={{
+                        ...styles.timelineIcon,
+                        ...(stage.state === 'completed' ? styles.timelineIconCompleted : {}),
+                        ...(stage.state === 'active' ? styles.timelineIconActive : {})
+                      }}>
+                        <i className={`fa-solid ${stage.icon}`}></i>
+                      </div>
+                      <div style={{
+                        ...styles.timelineLabel,
+                        ...(stage.state === 'completed' ? styles.timelineLabelCompleted : {}),
+                        ...(stage.state === 'active' ? styles.timelineLabelActive : {})
+                      }}>
+                        {stage.label}
+                      </div>
+                      {index < arr.length - 1 && (
+                        <div style={{
+                          ...styles.timelineLine,
+                          ...(stage.state === 'completed' ? styles.timelineLineCompleted : {})
+                        }}></div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div style={styles.modalFooter}>
@@ -468,4 +514,15 @@ const styles = {
   detailLabel: { color: '#64748b', fontSize: 14, fontWeight: 500 },
   detailValue: { color: '#1e293b', fontSize: 14, fontWeight: 600 },
   modalFooter: { padding: '20px 24px', borderTop: '1px solid #e2e8f0', background: '#f8fafc' },
+  
+  timelineContainer: { display: 'flex', alignItems: 'center', gap: 4, width: '100%' },
+  timelineStep: { display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', flex: 1 },
+  timelineIcon: { width: 32, height: 32, borderRadius: 16, background: '#f1f5f9', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, zIndex: 2, border: '2px solid white' },
+  timelineIconActive: { background: '#1E3A8A', color: 'white', boxShadow: '0 0 0 3px #bfdbfe' },
+  timelineIconCompleted: { background: '#22c55e', color: 'white' },
+  timelineLabel: { fontSize: 9, fontWeight: 600, color: '#94a3b8', marginTop: 6, textAlign: 'center', whiteSpace: 'nowrap' },
+  timelineLabelActive: { color: '#1E3A8A', fontWeight: 700 },
+  timelineLabelCompleted: { color: '#22c55e' },
+  timelineLine: { position: 'absolute', top: 16, left: '50%', width: '100%', height: 3, background: '#f1f5f9', zIndex: 1 },
+  timelineLineCompleted: { background: '#22c55e' },
 };

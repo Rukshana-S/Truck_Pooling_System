@@ -200,7 +200,32 @@ const getDriverStats = async (req, res) => {
       { $match: { driver: req.user._id, status: 'Delivered', isDeleted: { $ne: true } } },
       { $group: { _id: null, total: { $sum: '$cost.total' } } },
     ]);
-    res.json({ total, active, completed, totalSpent: earned[0]?.total || 0 });
+    
+    // Calculate monthly earnings for charts
+    const monthlyData = await Shipment.aggregate([
+      { $match: { driver: req.user._id, status: 'Delivered', isDeleted: { $ne: true } } },
+      {
+        $group: {
+          _id: { $month: "$createdAt" },
+          earnings: { $sum: "$cost.total" }
+        }
+      },
+      { $sort: { "_id": 1 } }
+    ]);
+
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthlyEarnings = monthlyData.map(m => ({
+      month: months[m._id - 1],
+      earnings: m.earnings
+    }));
+
+    res.json({ 
+      total, 
+      active, 
+      completed, 
+      totalSpent: earned[0]?.total || 0,
+      monthlyEarnings
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

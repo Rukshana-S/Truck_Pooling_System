@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 import { shipmentAPI, pricingAPI } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from 'recharts';
 
 // Demo available shipments for drivers — only used as fallback
 const demoAvailable = [];
@@ -27,7 +28,8 @@ export default function Dashboard() {
   const { user } = useAuth();
   const isDriver = user?.role === 'driver';
 
-  const [stats, setStats] = useState({ total: 0, active: 0, completed: 0, totalSpent: 0 });
+  const [stats, setStats] = useState({ total: 0, active: 0, completed: 0, totalSpent: 0, monthlyEarnings: [] });
+  const [analytics, setAnalytics] = useState(null);
   const [form, setForm] = useState({ pickup: '', drop: '', goodsType: '', bundles: 1 });
   const [estimate, setEstimate] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -47,6 +49,7 @@ export default function Dashboard() {
         .finally(() => setAvailLoading(false));
     } else {
       shipmentAPI.getStats().then(({ data }) => setStats(data)).catch(() => {});
+      shipmentAPI.getShipperAnalytics().then(({ data }) => setAnalytics(data)).catch(() => {});
     }
   }, [isDriver]);
 
@@ -199,6 +202,30 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Driver Analytics: Earnings Trend */}
+        {isDriver && stats.monthlyEarnings && stats.monthlyEarnings.length > 0 && (
+          <div className="card" style={{ marginTop: 24, padding: 24 }}>
+            <h2 style={{ ...styles.cardTitle, marginBottom: 16 }}>
+              <i className="fa-solid fa-chart-line" style={{ color: '#10b981', marginRight: 8 }}></i>
+              Earnings Trend
+            </h2>
+            <ResponsiveContainer width="100%" height={250}>
+              <AreaChart data={stats.monthlyEarnings} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorEarnings" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="month" axisLine={false} tickLine={false} />
+                <YAxis tickFormatter={(val) => `₹${val}`} axisLine={false} tickLine={false} />
+                <Tooltip formatter={(val) => [`₹${val.toLocaleString()}`, 'Earnings']} />
+                <Area type="monotone" dataKey="earnings" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorEarnings)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
         {/* Org: Booking Form + Estimate */}
         {!isDriver && (
           <div style={styles.bookingGrid}>
@@ -264,6 +291,45 @@ export default function Dashboard() {
                   <i className="fa-solid fa-lightbulb" style={{ fontSize: 48, color: '#cbd5e1' }}></i>
                   <p style={{ marginTop: 12 }}>Enter shipment details to see cost estimate</p>
                 </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Org: Analytics Overviews */}
+        {!isDriver && analytics && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginTop: 24 }}>
+            <div className="card" style={{ padding: 24 }}>
+              <h3 style={{ fontSize: 16, color: '#1e293b', marginBottom: 16 }}><i className="fa-solid fa-chart-bar" style={{ color: '#1E3A8A', marginRight: 8 }}></i>Monthly Spending</h3>
+              {analytics.monthlySpend?.length > 0 ? (
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={analytics.monthlySpend} margin={{ left: -20, right: 10 }}>
+                    <XAxis dataKey="month" axisLine={false} tickLine={false} />
+                    <YAxis tickFormatter={(val) => `₹${val}`} axisLine={false} tickLine={false} />
+                    <Tooltip formatter={(val) => [`₹${val.toLocaleString()}`, 'Spend']} cursor={{ fill: '#f1f5f9' }} />
+                    <Bar dataKey="spend" fill="#1E3A8A" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div style={styles.estimatePlaceholder}>No spending data yet</div>
+              )}
+            </div>
+
+            <div className="card" style={{ padding: 24 }}>
+              <h3 style={{ fontSize: 16, color: '#1e293b', marginBottom: 16 }}><i className="fa-solid fa-chart-pie" style={{ color: '#F97316', marginRight: 8 }}></i>Shipments by Category</h3>
+              {analytics.categories?.length > 0 ? (
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie data={analytics.categories} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={4}>
+                      {analytics.categories.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={['#F97316', '#1E3A8A', '#10b981', '#8b5cf6', '#f43f5e'][index % 5]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div style={styles.estimatePlaceholder}>No category data yet</div>
               )}
             </div>
           </div>
