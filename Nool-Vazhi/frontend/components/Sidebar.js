@@ -20,7 +20,7 @@ const driverNavItems = [
   { path: '/driver-trips', icon: 'fa-solid fa-truck-moving', label: 'My Trips' },
   { path: '/driver-auction', icon: 'fa-solid fa-gavel', label: 'Bid Auctions' },
   { path: '/shipments', icon: 'fa-solid fa-box', label: 'Old Shipments' },
-  { path: '/earnings', icon: 'fa-solid fa-wallet', label: 'Earnings' },
+  { path: '/payments', icon: 'fa-solid fa-wallet', label: 'Payments' },
   { path: '/profile', icon: 'fa-solid fa-user-pen', label: 'My Profile' },
 ];
 

@@ -3,9 +3,13 @@ import { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import LiveNotificationBanner from '@/components/LiveNotificationBanner';
 import { paymentAPI } from '@/services/api';
+import { useAuth } from '@/context/AuthContext';
 import { toast } from 'react-hot-toast';
 
 export default function PaymentsDashboard() {
+  const { user } = useAuth();
+  const isDriver = user?.role === 'driver';
+
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -28,13 +32,33 @@ export default function PaymentsDashboard() {
     }
   };
 
-  // Calculations
+  // Common Calculations
+  const totalTransactions = payments.length;
+
+  // Shipper Calculations
   const totalSpent = payments
     .filter(p => p.status === 'Advance Paid' || p.status === 'Fully Paid')
     .reduce((sum, p) => sum + p.amount, 0);
   
   const pendingFinal = payments
     .filter(p => p.type === 'Final' && p.status === 'Pending Final Payment')
+    .reduce((sum, p) => sum + p.amount, 0);
+
+  // Driver Calculations
+  const totalEarnings = payments
+    .filter(p => p.status === 'Advance Paid' || p.status === 'Fully Paid')
+    .reduce((sum, p) => sum + p.amount, 0);
+    
+  const advanceReceived = payments
+    .filter(p => p.type === 'Advance' && (p.status === 'Advance Paid' || p.status === 'Fully Paid'))
+    .reduce((sum, p) => sum + p.amount, 0);
+    
+  const finalReceived = payments
+    .filter(p => p.type === 'Final' && p.status === 'Fully Paid')
+    .reduce((sum, p) => sum + p.amount, 0);
+    
+  const totalPending = payments
+    .filter(p => p.status === 'Pending Advance' || p.status === 'Pending Final Payment')
     .reduce((sum, p) => sum + p.amount, 0);
 
   // Filtering
@@ -66,29 +90,54 @@ export default function PaymentsDashboard() {
         
         <div style={styles.header}>
           <div>
-            <h1 style={styles.title}>Payments & Invoices</h1>
-            <p style={styles.sub}>Track all your shipment transactions</p>
+            <h1 style={styles.title}>{isDriver ? 'Driver Payments' : 'Payments & Invoices'}</h1>
+            <p style={styles.sub}>{isDriver ? 'Track your earnings and pending payouts' : 'Track all your shipment transactions'}</p>
           </div>
         </div>
 
         {/* Summary Cards */}
-        <div style={styles.summaryGrid}>
-          <div style={styles.card}>
-            <div style={styles.cardIconWrap}><i className="fa-solid fa-wallet" style={styles.cardIcon}></i></div>
-            <div style={styles.cardValue}>₹{totalSpent.toLocaleString()}</div>
-            <div style={styles.cardLabel}>Total Paid</div>
+        {isDriver ? (
+          <div style={styles.summaryGrid}>
+            <div style={{ ...styles.card, borderLeft: '4px solid #22c55e' }}>
+              <div style={styles.cardIconWrap}><i className="fa-solid fa-wallet" style={styles.cardIcon}></i></div>
+              <div style={styles.cardValue}>₹{totalEarnings.toLocaleString()}</div>
+              <div style={styles.cardLabel}>Total Earnings (Received)</div>
+            </div>
+            <div style={{ ...styles.card, borderLeft: '4px solid #3b82f6' }}>
+              <div style={{ ...styles.cardIconWrap, background: '#eff6ff', color: '#3b82f6' }}><i className="fa-solid fa-money-bill-wave" style={{ color: '#3b82f6', fontSize: 20 }}></i></div>
+              <div style={styles.cardValue}>₹{advanceReceived.toLocaleString()}</div>
+              <div style={styles.cardLabel}>Advance Received</div>
+            </div>
+            <div style={{ ...styles.card, borderLeft: '4px solid #8b5cf6' }}>
+              <div style={{ ...styles.cardIconWrap, background: '#f5f3ff', color: '#8b5cf6' }}><i className="fa-solid fa-flag-checkered" style={{ color: '#8b5cf6', fontSize: 20 }}></i></div>
+              <div style={styles.cardValue}>₹{finalReceived.toLocaleString()}</div>
+              <div style={styles.cardLabel}>Final Received</div>
+            </div>
+            <div style={{ ...styles.card, borderLeft: '4px solid #F97316' }}>
+              <div style={{ ...styles.cardIconWrap, background: '#fff7ed', color: '#F97316' }}><i className="fa-solid fa-hourglass-half" style={{ color: '#F97316', fontSize: 20 }}></i></div>
+              <div style={styles.cardValue}>₹{totalPending.toLocaleString()}</div>
+              <div style={styles.cardLabel}>Pending Payments</div>
+            </div>
           </div>
-          <div style={{ ...styles.card, borderLeft: '4px solid #F97316' }}>
-            <div style={{ ...styles.cardIconWrap, background: '#fff7ed', color: '#F97316' }}><i className="fa-solid fa-hourglass-half" style={{ color: '#F97316', fontSize: 20 }}></i></div>
-            <div style={styles.cardValue}>₹{pendingFinal.toLocaleString()}</div>
-            <div style={styles.cardLabel}>Pending Final Payments</div>
+        ) : (
+          <div style={styles.summaryGrid}>
+            <div style={styles.card}>
+              <div style={styles.cardIconWrap}><i className="fa-solid fa-wallet" style={styles.cardIcon}></i></div>
+              <div style={styles.cardValue}>₹{totalSpent.toLocaleString()}</div>
+              <div style={styles.cardLabel}>Total Paid</div>
+            </div>
+            <div style={{ ...styles.card, borderLeft: '4px solid #F97316' }}>
+              <div style={{ ...styles.cardIconWrap, background: '#fff7ed', color: '#F97316' }}><i className="fa-solid fa-hourglass-half" style={{ color: '#F97316', fontSize: 20 }}></i></div>
+              <div style={styles.cardValue}>₹{pendingFinal.toLocaleString()}</div>
+              <div style={styles.cardLabel}>Pending Final Payments</div>
+            </div>
+            <div style={{ ...styles.card, borderLeft: '4px solid #8b5cf6' }}>
+              <div style={{ ...styles.cardIconWrap, background: '#f5f3ff', color: '#8b5cf6' }}><i className="fa-solid fa-receipt" style={{ color: '#8b5cf6', fontSize: 20 }}></i></div>
+              <div style={styles.cardValue}>{totalTransactions}</div>
+              <div style={styles.cardLabel}>Total Transactions</div>
+            </div>
           </div>
-          <div style={{ ...styles.card, borderLeft: '4px solid #8b5cf6' }}>
-            <div style={{ ...styles.cardIconWrap, background: '#f5f3ff', color: '#8b5cf6' }}><i className="fa-solid fa-receipt" style={{ color: '#8b5cf6', fontSize: 20 }}></i></div>
-            <div style={styles.cardValue}>{payments.length}</div>
-            <div style={styles.cardLabel}>Total Transactions</div>
-          </div>
-        </div>
+        )}
 
         {/* Filters & Search */}
         <div style={styles.controls}>
@@ -125,7 +174,7 @@ export default function PaymentsDashboard() {
                     <th style={styles.th}>Payment ID</th>
                     <th style={styles.th}>Date</th>
                     <th style={styles.th}>Shipment</th>
-                    <th style={styles.th}>Driver</th>
+                    <th style={styles.th}>{isDriver ? 'Shipper' : 'Driver'}</th>
                     <th style={styles.th}>Amount</th>
                     <th style={styles.th}>Type</th>
                     <th style={styles.th}>Status</th>
@@ -137,7 +186,7 @@ export default function PaymentsDashboard() {
                       <td style={styles.td}><span style={styles.payId}>{p.paymentId}</span></td>
                       <td style={styles.td}>{new Date(p.createdAt).toLocaleDateString()}</td>
                       <td style={styles.td}>{p.shipmentId?.shipmentId || 'N/A'}</td>
-                      <td style={styles.td}>{p.driverId?.name || 'N/A'}</td>
+                      <td style={styles.td}>{isDriver ? (p.shipperId?.businessName || p.shipperId?.name || 'N/A') : (p.driverId?.name || 'N/A')}</td>
                       <td style={{ ...styles.td, fontWeight: 700, color: '#1e293b' }}>₹{p.amount.toLocaleString()}</td>
                       <td style={styles.td}>{p.type}</td>
                       <td style={styles.td}>
