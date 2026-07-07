@@ -1,10 +1,14 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Sidebar from '@/components/Sidebar';
 import LiveNotificationBanner from '@/components/LiveNotificationBanner';
 import { paymentAPI } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'react-hot-toast';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
+import ReceiptPDF from '@/components/ReceiptPDF';
+import ReportTemplate from '@/components/ReportTemplate';
 
 export default function PaymentsDashboard() {
   const { user } = useAuth();
@@ -15,6 +19,18 @@ export default function PaymentsDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [selectedPayment, setSelectedPayment] = useState(null);
+  
+  const [showReportPreview, setShowReportPreview] = useState(false);
+  const [showReceiptPreview, setShowReceiptPreview] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  
+  // Refs for visible previews (scaled)
+  const previewReceiptRef = useRef();
+  const previewReportRef = useRef();
+
+  // Refs for hidden print versions (unscaled, unconstrained)
+  const printReceiptRef = useRef();
+  const printReportRef = useRef();
 
   useEffect(() => {
     fetchPayments();
@@ -29,6 +45,55 @@ export default function PaymentsDashboard() {
       toast.error('Failed to load payments.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const generatePDF = async (elementRef, filename, print = false) => {
+    if (!elementRef.current) return;
+    try {
+      setGenerating(true);
+      toast.loading(print ? 'Preparing Print...' : 'Generating High-Quality PDF...', { id: 'pdf-toast' });
+      
+      // Wait briefly for React to render the hidden elements
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const canvas = await html2canvas(elementRef.current, { 
+        scale: 3, 
+        useCORS: true,
+        logging: false,
+        windowWidth: 1123,
+        onclone: (document) => {
+          // Ensure cloned hidden element is visible for capture
+          const el = document.getElementById(elementRef.current.id);
+          if (el) {
+            el.style.position = 'static';
+            el.style.display = 'block';
+            el.style.left = 'auto';
+            el.style.top = 'auto';
+          }
+        }
+      });
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      
+      const pdf = new jsPDF('l', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, '', 'FAST');
+      
+      if (print) {
+        pdf.autoPrint();
+        window.open(pdf.output('bloburl'), '_blank');
+        toast.success('Ready to print!', { id: 'pdf-toast' });
+      } else {
+        pdf.save(filename);
+        toast.success('Downloaded Successfully!', { id: 'pdf-toast' });
+      }
+    } catch (err) {
+      toast.error('Failed to generate PDF', { id: 'pdf-toast' });
+      console.error(err);
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -157,6 +222,14 @@ export default function PaymentsDashboard() {
             <option value="Pending Final Payment">Pending Final Payment</option>
             <option value="Fully Paid">Fully Paid</option>
           </select>
+          <button 
+            className="btn-primary" 
+            style={{ padding: '0 24px', background: '#1E3A8A', border: 'none', borderRadius: 10 }}
+            onClick={() => setShowReportPreview(true)}
+            disabled={filteredPayments.length === 0}
+          >
+            <i className="fa-solid fa-file-pdf" style={{ marginRight: 8 }}></i> Generate Report
+          </button>
         </div>
 
         {/* Payment History */}
@@ -254,10 +327,101 @@ export default function PaymentsDashboard() {
             <div style={styles.modalFooter}>
               <button 
                 className="btn-secondary" 
-                style={{ width: '100%', padding: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, background: '#f1f5f9', border: '1px solid #cbd5e1', color: '#64748b' }}
-                onClick={() => toast('No receipt yet.', { icon: '📄' })}
+                style={{ width: '100%', padding: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, background: '#1E3A8A', border: '1px solid #1E3A8A', color: 'white' }}
+                onClick={() => setShowReceiptPreview(true)}
               >
-                <i className="fa-solid fa-download"></i> Download Receipt
+                <i className="fa-solid fa-file-invoice"></i> View Receipt
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden Render Targets for Flawless PDF Capture (No Scaling/Modal Constraints) */}
+      <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', width: '1123px', zIndex: -100 }}>
+        {selectedPayment && (
+          <div id="print-receipt-wrapper" ref={printReceiptRef}>
+            <ReceiptPDF payment={selectedPayment} />
+          </div>
+        )}
+        <div id="print-report-wrapper" ref={printReportRef}>
+          <ReportTemplate payments={filteredPayments} isDriver={isDriver} user={user} />
+        </div>
+      </div>
+
+      {/* Receipt Preview Modal */}
+      {showReceiptPreview && selectedPayment && (
+        <div style={styles.modalOverlay}>
+          <div style={{ ...styles.modalCard, maxWidth: 880, background: '#f1f5f9' }}>
+            <div style={styles.modalHeader}>
+              <h3 style={styles.modalTitle}>Receipt Preview</h3>
+              <button style={styles.closeBtn} onClick={() => setShowReceiptPreview(false)} disabled={generating}>
+                <i className="fa-solid fa-times"></i>
+              </button>
+            </div>
+            
+            <div style={{ padding: 20, maxHeight: '65vh', overflowY: 'auto', display: 'flex', justifyContent: 'center' }}>
+              {/* Scale down the 1123px component for preview without shrinking the actual generated component */}
+              <div style={{ transform: 'scale(0.7)', transformOrigin: 'top center' }}>
+                <ReceiptPDF payment={selectedPayment} />
+              </div>
+            </div>
+
+            <div style={{ ...styles.modalFooter, display: 'flex', gap: 12 }}>
+              <button 
+                className="btn-secondary" 
+                style={{ flex: 1, padding: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}
+                onClick={() => generatePDF(printReceiptRef, `Receipt_${selectedPayment.paymentId}.pdf`, true)}
+                disabled={generating}
+              >
+                <i className="fa-solid fa-print"></i> Print
+              </button>
+              <button 
+                className="btn-primary" 
+                style={{ flex: 1, padding: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, background: '#F97316', border: 'none' }}
+                onClick={() => generatePDF(printReceiptRef, `Receipt_${selectedPayment.paymentId}.pdf`, false)}
+                disabled={generating}
+              >
+                <i className="fa-solid fa-download"></i> Download PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Report Preview Modal */}
+      {showReportPreview && (
+        <div style={styles.modalOverlay}>
+          <div style={{ ...styles.modalCard, maxWidth: 880, background: '#f1f5f9' }}>
+            <div style={styles.modalHeader}>
+              <h3 style={styles.modalTitle}>Consolidated Report Preview</h3>
+              <button style={styles.closeBtn} onClick={() => setShowReportPreview(false)} disabled={generating}>
+                <i className="fa-solid fa-times"></i>
+              </button>
+            </div>
+            
+            <div style={{ padding: 20, maxHeight: '65vh', overflowY: 'auto', display: 'flex', justifyContent: 'center' }}>
+              <div style={{ transform: 'scale(0.7)', transformOrigin: 'top center' }}>
+                <ReportTemplate payments={filteredPayments} isDriver={isDriver} user={user} />
+              </div>
+            </div>
+
+            <div style={{ ...styles.modalFooter, display: 'flex', gap: 12 }}>
+              <button 
+                className="btn-secondary" 
+                style={{ flex: 1, padding: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}
+                onClick={() => generatePDF(printReportRef, `Report_${new Date().getTime()}.pdf`, true)}
+                disabled={generating}
+              >
+                <i className="fa-solid fa-print"></i> Print Report
+              </button>
+              <button 
+                className="btn-primary" 
+                style={{ flex: 1, padding: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, background: '#1E3A8A', border: 'none' }}
+                onClick={() => generatePDF(printReportRef, `Report_${new Date().getTime()}.pdf`, false)}
+                disabled={generating}
+              >
+                <i className="fa-solid fa-download"></i> Download PDF Report
               </button>
             </div>
           </div>
