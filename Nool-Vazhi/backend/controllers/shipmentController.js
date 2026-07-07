@@ -90,6 +90,14 @@ const updateShipmentStatus = async (req, res) => {
     const shipment = await Shipment.findOne({ _id: req.params.id || req.params.shipmentId, isDeleted: { $ne: true } });
     if (!shipment) return res.status(404).json({ message: 'Not found' });
 
+    // Authorization: Only the assigned driver can update the status
+    if (req.user.role === 'driver' && shipment.driver?.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Only the assigned driver can update tracking' });
+    }
+    if (req.user.role !== 'driver') {
+      return res.status(403).json({ message: 'Organizations have read-only tracking access' });
+    }
+
     const ADVANCED_STATUS_ORDER = [
       'Pending',
       'Accepted',

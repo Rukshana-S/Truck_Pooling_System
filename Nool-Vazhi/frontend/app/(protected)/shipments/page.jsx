@@ -18,25 +18,38 @@ const statusClass = {
   Cancelled: 'badge-cancelled',
 };
 
-const STATUS_STAGES = [
+const ADVANCED_STATUS_STAGES = [
   { label: 'Pending', icon: 'fa-box' },
-  { label: 'Pickup Confirmed', icon: 'fa-truck-loading' },
+  { label: 'Accepted', icon: 'fa-handshake' },
+  { label: 'Advance Paid', icon: 'fa-money-bill-wave' },
+  { label: 'Pickup Started', icon: 'fa-truck-arrow-right' },
+  { label: 'Loaded', icon: 'fa-boxes-stacked' },
   { label: 'In Transit', icon: 'fa-truck-fast' },
-  { label: 'Out for Delivery', icon: 'fa-route' },
-  { label: 'Delivered', icon: 'fa-house-circle-check' }
+  { label: 'Near Destination', icon: 'fa-location-dot' },
+  { label: 'Delivered', icon: 'fa-house-circle-check' },
+  { label: 'Final Payment Completed', icon: 'fa-check-double' }
 ];
 
-const STATUS_OPTIONS = ['Pickup Confirmed', 'In Transit', 'Out for Delivery', 'Delivered'];
-
-// Helper to determine if a stage is completed or active
-const getStageState = (currentStatus, stageLabel) => {
+const getAdvancedStageState = (currentStatus, stageLabel) => {
   if (currentStatus === 'Cancelled') return 'cancelled';
-  const currentIndex = STATUS_STAGES.findIndex(s => s.label === currentStatus);
-  const stageIndex = STATUS_STAGES.findIndex(s => s.label === stageLabel);
+  const cStatus = currentStatus || 'Pending';
+  const currentIndex = ADVANCED_STATUS_STAGES.findIndex(s => s.label === cStatus);
+  const stageIndex = ADVANCED_STATUS_STAGES.findIndex(s => s.label === stageLabel);
   
   if (stageIndex < currentIndex) return 'completed';
   if (stageIndex === currentIndex) return 'active';
   return 'pending';
+};
+
+const getNextAction = (status) => {
+  switch (status || 'Pending') {
+    case 'Advance Paid': return { label: 'Start Pickup', next: 'Pickup Started', icon: 'fa-truck-arrow-right' };
+    case 'Pickup Started': return { label: 'Load Goods', next: 'Loaded', icon: 'fa-boxes-stacked' };
+    case 'Loaded': return { label: 'Start Journey', next: 'In Transit', icon: 'fa-truck-fast' };
+    case 'In Transit': return { label: 'Near Destination', next: 'Near Destination', icon: 'fa-location-dot' };
+    case 'Near Destination': return { label: 'Mark Delivered', next: 'Delivered', icon: 'fa-house-circle-check' };
+    default: return null;
+  }
 };
 
 export default function Shipments() {
@@ -66,12 +79,11 @@ export default function Shipments() {
 
   const openModal = (s) => { setModal(s); setStatusInput(s.status); };
 
-  const handleUpdate = async () => {
+  const handleUpdate = async (shipmentId, newStatus) => {
     setUpdating(true);
     try {
-      await shipmentAPI.updateLocation(modal._id, { status: statusInput });
-      setModal(null);
-      toast.success('Status updated');
+      await shipmentAPI.updateStatus(shipmentId, { status: newStatus });
+      toast.success('Tracking status updated');
       fetchShipments();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Update failed');
@@ -351,11 +363,11 @@ export default function Shipments() {
                   {s.status === 'Cancelled' ? (
                     <span className="badge badge-cancelled">Cancelled</span>
                   ) : (
-                    <div style={styles.timelineContainer}>
-                      {STATUS_STAGES.map((stage, index) => {
-                        const state = getStageState(s.status, stage.label);
+                    <div style={{ ...styles.timelineContainer, minWidth: '100%', overflowX: 'auto', paddingBottom: 8 }}>
+                      {ADVANCED_STATUS_STAGES.map((stage, index) => {
+                        const state = getAdvancedStageState(s.currentStatus, stage.label);
                         return (
-                          <div key={stage.label} style={styles.timelineStep}>
+                          <div key={stage.label} style={{...styles.timelineStep, minWidth: 90}}>
                             <div style={{
                               ...styles.timelineIcon,
                               ...(state === 'completed' ? styles.timelineIconCompleted : {}),
@@ -370,7 +382,7 @@ export default function Shipments() {
                             }}>
                               {stage.label}
                             </div>
-                            {index < STATUS_STAGES.length - 1 && (
+                            {index < ADVANCED_STATUS_STAGES.length - 1 && (
                               <div style={{
                                 ...styles.timelineLine,
                                 ...(state === 'completed' ? styles.timelineLineCompleted : {})
@@ -404,21 +416,31 @@ export default function Shipments() {
                     </div>
                   )}
                   <div style={styles.metaItem}><span style={styles.metaLabel}>Date</span><span>{new Date(s.createdAt).toLocaleDateString('en-IN')}</span></div>
+                  <div style={styles.metaItem}><span style={styles.metaLabel}>Last Updated</span><span>{s.statusUpdatedAt ? new Date(s.statusUpdatedAt).toLocaleString('en-IN', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : 'Just now'}</span></div>
                   <div style={styles.metaItem}><span style={styles.metaLabel}>Cost</span><span style={{ color: '#1E3A8A', fontWeight: 700 }}>₹{s.cost?.total?.toLocaleString()}</span></div>
                 </div>
 
                 <div style={styles.shipActions}>
                   {isDriver ? (
                     s.status !== 'Delivered' && s.status !== 'Cancelled' ? (
-                      s.paymentStatus === 'Pending Advance' ? (
-                        <button className="btn-secondary" style={{ padding: '8px 20px', fontSize: 13, cursor: 'not-allowed', opacity: 0.7 }} disabled>
-                          <i className="fa-solid fa-lock"></i> Waiting for Advance Payment
-                        </button>
-                      ) : (
-                        <button className="btn-primary" style={{ padding: '8px 20px', fontSize: 13 }} onClick={() => openModal(s)}>
-                          <i className="fa-solid fa-pen"></i> Update Status
-                        </button>
-                      )
+                      (() => {
+                        const action = getNextAction(s.currentStatus);
+                        if (action) {
+                          return (
+                            <button className="btn-primary" style={{ padding: '8px 20px', fontSize: 13 }} onClick={() => handleUpdate(s._id, action.next)} disabled={updating}>
+                              <i className={`fa-solid ${action.icon}`}></i> {action.label}
+                            </button>
+                          );
+                        } else if ((s.currentStatus || 'Pending') === 'Pending' || (s.currentStatus || 'Pending') === 'Accepted') {
+                          return (
+                            <button className="btn-secondary" style={{ padding: '8px 20px', fontSize: 13, cursor: 'not-allowed', opacity: 0.7 }} disabled>
+                              <i className="fa-solid fa-lock"></i> Waiting for Advance Payment
+                            </button>
+                          );
+                        } else {
+                          return null;
+                        }
+                      })()
                     ) : (
                       <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                         <span style={{ color: '#22c55e', fontWeight: 600, fontSize: 13 }}>
@@ -482,36 +504,7 @@ export default function Shipments() {
         )}
       </main>
 
-      {/* Driver Status Modal */}
-      {modal && (
-        <div style={styles.modalOverlay} onClick={() => setModal(null)}>
-          <div style={styles.modalCard} onClick={e => e.stopPropagation()}>
-            <h3 style={styles.modalTitle}>
-              <i className="fa-solid fa-pen" style={{ color: '#F97316', marginRight: 8 }}></i>
-              Update Status
-            </h3>
-            <p style={styles.modalRoute}>{modal.pickup} → {modal.drop}</p>
-            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#15803d', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <i className="fa-solid fa-satellite-dish"></i>
-              Location is tracked automatically via GPS
-            </div>
-            <div className="form-group">
-              <label>Update Status</label>
-              <select value={statusInput} onChange={e => setStatusInput(e.target.value)}>
-                {STATUS_OPTIONS.map(s => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-            <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-              <button className="btn-primary" style={{ flex: 1, justifyContent: 'center', padding: '12px' }} onClick={handleUpdate} disabled={updating}>
-                {updating ? 'Updating...' : 'Update'}
-              </button>
-              <button style={styles.cancelBtn} onClick={() => setModal(null)}>Cancel</button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Edit Shipment Modal */}
       {editModal && (

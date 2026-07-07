@@ -54,13 +54,35 @@ class PaymentService {
     await payment.save();
 
     // Sync to Shipment
-    // Based on the payment update, we update the shipment's overall payment status
+    // Based on the payment update, we update the shipment's overall payment status and tracking status
     const shipment = await Shipment.findById(payment.shipmentId);
     if (shipment) {
-      if (newStatus === 'Advance Paid' && shipment.paymentStatus === 'Pending Advance') {
+      if (newStatus === 'Advance Paid') {
         shipment.paymentStatus = 'Advance Paid';
+        
+        // Also advance the tracking status to unlock driver actions
+        if (!['Advance Paid', 'Pickup Started', 'Loaded', 'In Transit', 'Near Destination', 'Delivered'].includes(shipment.currentStatus)) {
+          shipment.currentStatus = 'Advance Paid';
+          shipment.statusUpdatedAt = Date.now();
+          shipment.trackingHistory.push({
+            status: 'Advance Paid',
+            note: 'Advance Payment Completed',
+            timestamp: Date.now()
+          });
+        }
       } else if (newStatus === 'Fully Paid') {
         shipment.paymentStatus = 'Fully Paid';
+        
+        // Also advance tracking status to Final Payment Completed
+        if (shipment.currentStatus === 'Delivered') {
+          shipment.currentStatus = 'Final Payment Completed';
+          shipment.statusUpdatedAt = Date.now();
+          shipment.trackingHistory.push({
+            status: 'Final Payment Completed',
+            note: 'Final Payment Completed',
+            timestamp: Date.now()
+          });
+        }
       } else if (newStatus === 'Pending Final Payment') {
         shipment.paymentStatus = 'Pending Final Payment';
       }

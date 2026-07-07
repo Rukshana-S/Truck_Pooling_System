@@ -54,6 +54,26 @@ const createPayment = async (req, res) => {
     // 6. Prevent Duplicate Payments
     const existingPayment = await Payment.findOne({ shipmentId: shipment._id, type });
     if (existingPayment) {
+      if (existingPayment.status !== 'Pending Advance' && existingPayment.status !== 'Pending Final Payment') {
+         return res.status(400).json({ success: false, message: 'Payment already completed for this type.' });
+      }
+
+      if (!existingPayment.razorpayOrderId) {
+        // Generate missing Razorpay Order
+        const razorpayOrder = await PaymentService.createRazorpayOrder(amount, existingPayment._id.toString());
+        existingPayment.razorpayOrderId = razorpayOrder.id;
+        await existingPayment.save();
+        
+        return res.status(201).json({
+          success: true,
+          message: 'Payment order generated successfully.',
+          data: {
+            payment: existingPayment,
+            razorpayOrder
+          }
+        });
+      }
+
       return res.status(409).json({ 
         success: false, 
         message: 'Payment already exists for this shipment.',
