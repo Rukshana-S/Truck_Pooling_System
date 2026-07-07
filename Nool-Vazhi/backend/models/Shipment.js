@@ -21,6 +21,11 @@ const shipmentSchema = new mongoose.Schema(
       poolDiscount: { type: Number, default: 0 },
       total: { type: Number, default: 0 },
     },
+    paymentStatus: {
+      type: String,
+      enum: ['Pending Advance', 'Advance Paid', 'Pending Final Payment', 'Fully Paid'],
+      default: 'Pending Advance',
+    },
     timeline: [
       {
         status: String,
