@@ -159,6 +159,29 @@ const getShipmentPayments = async (req, res) => {
   }
 };
 
+// 3.5 Get My Payments
+const getMyPayments = async (req, res) => {
+  try {
+    checkDBConnection();
+    
+    // Find payments where user is either shipper or driver
+    const query = req.user.role === 'driver' 
+      ? { driverId: req.user._id } 
+      : { shipperId: req.user._id };
+
+    const payments = await Payment.find(query)
+      .populate('shipmentId', 'shipmentId pickup drop')
+      .populate('driverId', 'name')
+      .populate('shipperId', 'name businessName')
+      .sort({ createdAt: -1 });
+
+    return res.json({ success: true, message: 'Payments retrieved successfully.', data: payments });
+  } catch (error) {
+    console.error("Payment Error [getMyPayments]:", error);
+    return res.status(500).json({ success: false, message: error.message || 'Failed to retrieve payments.' });
+  }
+};
+
 // 4. Update Payment Status (e.g. after manual successful transaction if needed)
 const updatePaymentStatus = async (req, res) => {
   try {
@@ -286,6 +309,7 @@ module.exports = {
   createPayment,
   getPaymentById,
   getShipmentPayments,
+  getMyPayments,
   updatePaymentStatus,
   verifyRazorpayPayment
 };

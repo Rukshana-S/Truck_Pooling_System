@@ -10,6 +10,7 @@ const orgNavItems = [
   { path: '/marketplace', icon: 'fa-solid fa-store', label: 'Marketplace' },
   { path: '/auction', icon: 'fa-solid fa-gavel', label: 'Auctions' },
   { path: '/shipments', icon: 'fa-solid fa-box', label: 'Shipments' },
+  { path: '/payments', icon: 'fa-solid fa-file-invoice-dollar', label: 'Payments & Invoices' },
   { path: '/analytics', icon: 'fa-solid fa-chart-pie', label: 'Analytics' },
   { path: '/profile', icon: 'fa-solid fa-user-pen', label: 'My Profile' },
 ];
