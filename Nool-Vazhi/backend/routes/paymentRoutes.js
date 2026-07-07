@@ -5,12 +5,14 @@ const {
   createPayment,
   getPaymentById,
   getShipmentPayments,
-  updatePaymentStatus
+  updatePaymentStatus,
+  verifyRazorpayPayment
 } = require('../controllers/paymentController');
 
 // All payment routes are protected
 router.use(protect);
 
+router.post('/razorpay/verify', verifyRazorpayPayment);
 router.post('/', createPayment);
 router.get('/:id', getPaymentById);
 router.get('/shipment/:shipmentId', getShipmentPayments);

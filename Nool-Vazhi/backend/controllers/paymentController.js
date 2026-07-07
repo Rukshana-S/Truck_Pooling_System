@@ -20,7 +20,7 @@ const createPayment = async (req, res) => {
     }
 
     // Initialize through service
-    const payment = await PaymentService.initializePayment({
+    let payment = await PaymentService.initializePayment({
       shipmentId: shipment._id,
       shipperId: shipment.shipper,
       driverId: shipment.driver,
@@ -28,7 +28,17 @@ const createPayment = async (req, res) => {
       type
     });
 
-    res.status(201).json(payment);
+    // Create Razorpay Order
+    const razorpayOrder = await PaymentService.createRazorpayOrder(amount, payment.paymentId);
+    
+    // Store razorpayOrderId in our payment record
+    payment.razorpayOrderId = razorpayOrder.id;
+    await payment.save();
+
+    res.status(201).json({
+      payment,
+      razorpayOrder
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -101,9 +111,52 @@ const updatePaymentStatus = async (req, res) => {
   }
 };
 
+// 5. Verify Razorpay Payment
+const verifyRazorpayPayment = async (req, res) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, paymentId, status } = req.body;
+
+    const isValid = PaymentService.verifyRazorpayPayment(
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature
+    );
+
+    if (!isValid) {
+      return res.status(400).json({ message: 'Invalid payment signature' });
+    }
+
+    // Find the payment record
+    const payment = await Payment.findById(paymentId);
+    if (!payment) {
+      return res.status(404).json({ message: 'Payment record not found' });
+    }
+
+    // Update the payment record with Razorpay IDs and the new status
+    payment.razorpayPaymentId = razorpay_payment_id;
+    payment.razorpaySignature = razorpay_signature;
+    // We already have razorpayOrderId saved during createPayment, but we can verify it matches
+    
+    await payment.save();
+
+    // Call updatePaymentStatus in service to update local payment status and sync with shipment
+    const updatedPayment = await PaymentService.updatePaymentStatus(
+      paymentId,
+      status, // e.g. 'Advance Paid' or 'Fully Paid'
+      'Razorpay',
+      razorpay_payment_id
+    );
+
+    res.json({ message: 'Payment verified successfully', payment: updatedPayment });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   createPayment,
   getPaymentById,
   getShipmentPayments,
-  updatePaymentStatus
+  updatePaymentStatus,
+  verifyRazorpayPayment
 };

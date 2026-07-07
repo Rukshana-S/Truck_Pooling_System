@@ -1,5 +1,12 @@
 const Payment = require('../models/Payment');
 const Shipment = require('../models/Shipment');
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
+
+const razorpayInstance = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
 
 /**
  * Service to handle payment business logic.
@@ -58,6 +65,32 @@ class PaymentService {
     }
 
     return payment;
+  }
+
+  /**
+   * Create a Razorpay Order
+   */
+  static async createRazorpayOrder(amount, receiptId) {
+    const options = {
+      amount: amount * 100, // Razorpay works in paise
+      currency: 'INR',
+      receipt: receiptId,
+    };
+    const order = await razorpayInstance.orders.create(options);
+    return order;
+  }
+
+  /**
+   * Verify Razorpay Payment Signature
+   */
+  static verifyRazorpayPayment(orderId, paymentId, signature) {
+    const body = orderId + '|' + paymentId;
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(body.toString())
+      .digest('hex');
+
+    return expectedSignature === signature;
   }
 }
 
