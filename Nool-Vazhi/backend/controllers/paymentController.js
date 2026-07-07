@@ -1,22 +1,65 @@
+const mongoose = require('mongoose');
 const Payment = require('../models/Payment');
 const PaymentService = require('../services/paymentService');
 const Shipment = require('../models/Shipment');
+const User = require('../models/User'); // For checking driver and organization
+
+// Helper function to check DB connection
+const checkDBConnection = () => {
+  if (mongoose.connection.readyState !== 1) {
+    throw new Error('Database connection unavailable.');
+  }
+};
 
 // 1. Create a Payment
 const createPayment = async (req, res) => {
   try {
+    checkDBConnection();
     const { shipmentId, amount, type } = req.body;
     
-    // Basic validation
+    // 1. Validate required fields
     if (!shipmentId || !amount || !type) {
-      return res.status(400).json({ message: 'Missing required fields' });
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
+    // 2. Validate ObjectIds
+    if (!mongoose.Types.ObjectId.isValid(shipmentId)) {
+      return res.status(400).json({ success: false, message: 'Invalid ID format.' });
+    }
+
+    // 3. Verify Shipment exists
     const shipment = await Shipment.findById(shipmentId);
-    if (!shipment) return res.status(404).json({ message: 'Shipment not found' });
+    if (!shipment) {
+      return res.status(404).json({ success: false, message: 'Shipment not found.' });
+    }
     
+    // 4. Verify Organization (Shipper) exists
+    if (!shipment.shipper) {
+      return res.status(400).json({ success: false, message: 'Shipment has no organization assigned.' });
+    }
+    const organization = await User.findById(shipment.shipper);
+    if (!organization) {
+      return res.status(404).json({ success: false, message: 'Organization not found.' });
+    }
+
+    // 5. Verify Driver exists
     if (!shipment.driver) {
-       return res.status(400).json({ message: 'Shipment must be assigned to a driver before creating a payment' });
+       return res.status(400).json({ success: false, message: 'Shipment must be assigned to a driver before creating a payment.' });
+    }
+    const driver = await User.findById(shipment.driver);
+    if (!driver) {
+      return res.status(404).json({ success: false, message: 'Driver not found.' });
+    }
+
+    // 6. Prevent Duplicate Payments
+    const existingPayment = await Payment.findOne({ shipmentId: shipment._id, type });
+    if (existingPayment) {
+      return res.status(409).json({ 
+        success: false, 
+        message: 'Payment already exists for this shipment.',
+        paymentId: existingPayment._id.toString(),
+        existingPayment
+      });
     }
 
     // Initialize through service
@@ -29,30 +72,54 @@ const createPayment = async (req, res) => {
     });
 
     // Create Razorpay Order
-    const razorpayOrder = await PaymentService.createRazorpayOrder(amount, payment.paymentId);
+    // Will throw custom errors if keys are missing or Razorpay API fails
+    const razorpayOrder = await PaymentService.createRazorpayOrder(amount, payment._id.toString());
     
     // Store razorpayOrderId in our payment record
     payment.razorpayOrderId = razorpayOrder.id;
     await payment.save();
 
-    res.status(201).json({
-      payment,
-      razorpayOrder
+    return res.status(201).json({
+      success: true,
+      message: 'Payment created successfully.',
+      data: {
+        payment,
+        razorpayOrder
+      }
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Payment Error [createPayment]:", error);
+    
+    // Custom handling for specific errors
+    if (error.message === 'Database connection unavailable.') {
+      return res.status(503).json({ success: false, message: error.message });
+    }
+    if (error.message === 'Payment gateway configuration missing.') {
+      return res.status(500).json({ success: false, message: error.message });
+    }
+    
+    // Default 500 error without exposing stack traces
+    return res.status(500).json({ success: false, message: error.message || 'Internal server error while creating payment.' });
   }
 };
 
 // 2. Get Payment by ID
 const getPaymentById = async (req, res) => {
   try {
+    checkDBConnection();
+    
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Invalid ID format.' });
+    }
+
     const payment = await Payment.findById(req.params.id)
       .populate('shipmentId', 'shipmentId pickup drop')
       .populate('shipperId', 'name businessName')
       .populate('driverId', 'name');
 
-    if (!payment) return res.status(404).json({ message: 'Payment not found' });
+    if (!payment) {
+      return res.status(404).json({ success: false, message: 'Payment not found.' });
+    }
     
     // Auth check: Only shipper or driver of this payment can view it
     if (
@@ -60,39 +127,52 @@ const getPaymentById = async (req, res) => {
       req.user._id.toString() !== payment.driverId._id.toString() &&
       req.user.role !== 'admin'
     ) {
-      return res.status(403).json({ message: 'Unauthorized' });
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
     }
 
-    res.json(payment);
+    return res.json({ success: true, message: 'Payment retrieved successfully.', data: payment });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Payment Error [getPaymentById]:", error);
+    return res.status(500).json({ success: false, message: error.message || 'Failed to retrieve payment.' });
   }
 };
 
 // 3. Get Payments for a Shipment
 const getShipmentPayments = async (req, res) => {
   try {
+    checkDBConnection();
     const { shipmentId } = req.params;
+    
+    if (!mongoose.Types.ObjectId.isValid(shipmentId)) {
+      return res.status(400).json({ success: false, message: 'Invalid ID format.' });
+    }
+
     const payments = await Payment.find({ shipmentId })
       .populate('shipperId', 'name')
       .populate('driverId', 'name')
       .sort({ createdAt: 1 });
       
-    res.json(payments);
+    return res.json({ success: true, message: 'Payments retrieved successfully.', data: payments });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Payment Error [getShipmentPayments]:", error);
+    return res.status(500).json({ success: false, message: error.message || 'Failed to retrieve shipments.' });
   }
 };
 
-// 4. Update Payment Status (e.g. after successful transaction)
+// 4. Update Payment Status (e.g. after manual successful transaction if needed)
 const updatePaymentStatus = async (req, res) => {
   try {
+    checkDBConnection();
     const { status, paymentMethod, transactionId } = req.body;
+    
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'Invalid ID format.' });
+    }
     
     // Validate status string
     const validStatuses = ['Pending Advance', 'Advance Paid', 'Pending Final Payment', 'Fully Paid'];
     if (!validStatuses.includes(status)) {
-       return res.status(400).json({ message: 'Invalid payment status' });
+       return res.status(400).json({ success: false, message: 'Invalid payment status.' });
     }
 
     const updatedPayment = await PaymentService.updatePaymentStatus(
@@ -102,20 +182,34 @@ const updatePaymentStatus = async (req, res) => {
       transactionId
     );
 
-    res.json(updatedPayment);
+    return res.json({ success: true, message: 'Payment status updated.', data: updatedPayment });
   } catch (error) {
+    console.error("Payment Error [updatePaymentStatus]:", error);
     if (error.message === 'Payment not found') {
-       return res.status(404).json({ message: error.message });
+       return res.status(404).json({ success: false, message: 'Payment not found.' });
     }
-    res.status(500).json({ message: error.message });
+    return res.status(500).json({ success: false, message: error.message || 'Failed to update payment status.' });
   }
 };
 
 // 5. Verify Razorpay Payment
 const verifyRazorpayPayment = async (req, res) => {
   try {
+    checkDBConnection();
+    console.log("Verify Payment Payload:", req.body);
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature, paymentId, status } = req.body;
+    
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !paymentId || !status) {
+      console.log("Missing fields in verify payload");
+      return res.status(400).json({ success: false, message: 'Missing required fields.' });
+    }
 
+    if (!mongoose.Types.ObjectId.isValid(paymentId)) {
+      console.log("Invalid paymentId:", paymentId);
+      return res.status(400).json({ success: false, message: 'Invalid ID format.' });
+    }
+
+    // verifyRazorpayPayment handles configuration check and signature validation
     const isValid = PaymentService.verifyRazorpayPayment(
       razorpay_order_id,
       razorpay_payment_id,
@@ -123,19 +217,19 @@ const verifyRazorpayPayment = async (req, res) => {
     );
 
     if (!isValid) {
-      return res.status(400).json({ message: 'Invalid payment signature' });
+      console.log("Signature mismatch!");
+      return res.status(400).json({ success: false, message: 'Invalid payment signature.' });
     }
 
     // Find the payment record
     const payment = await Payment.findById(paymentId);
     if (!payment) {
-      return res.status(404).json({ message: 'Payment record not found' });
+      return res.status(404).json({ success: false, message: 'Payment record not found.' });
     }
 
     // Update the payment record with Razorpay IDs and the new status
     payment.razorpayPaymentId = razorpay_payment_id;
     payment.razorpaySignature = razorpay_signature;
-    // We already have razorpayOrderId saved during createPayment, but we can verify it matches
     
     await payment.save();
 
@@ -147,9 +241,30 @@ const verifyRazorpayPayment = async (req, res) => {
       razorpay_payment_id
     );
 
-    res.json({ message: 'Payment verified successfully', payment: updatedPayment });
+    // Notify driver about Advance Payment
+    if (status === 'Advance Paid') {
+      const io = req.app.get('io');
+      if (io) {
+        const Notification = require('../models/Notification');
+        const notification = await Notification.create({
+          userId: payment.driverId,
+          title: 'Advance Payment Received',
+          message: `The shipper has paid the advance for the shipment. You can now confirm the pickup.`,
+          type: 'Payment',
+          relatedId: payment.shipmentId,
+          onModel: 'Shipment'
+        });
+        io.to(payment.driverId.toString()).emit('notification', notification);
+      }
+    }
+
+    return res.json({ success: true, message: 'Payment verified successfully.', data: updatedPayment });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Payment Error [verifyRazorpayPayment]:", error);
+    if (error.message === 'Payment gateway configuration missing.') {
+      return res.status(500).json({ success: false, message: error.message });
+    }
+    return res.status(500).json({ success: false, message: error.message || 'Payment verification failed.' });
   }
 };
 

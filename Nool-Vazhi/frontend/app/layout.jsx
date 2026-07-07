@@ -1,6 +1,7 @@
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { Toaster } from 'react-hot-toast';
+import Script from 'next/script';
 
 import { NotificationProvider } from '@/context/NotificationContext';
 
@@ -22,6 +23,7 @@ export default function RootLayout({ children }) {
             {children}
           </NotificationProvider>
         </AuthProvider>
+        <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       </body>
     </html>
   );

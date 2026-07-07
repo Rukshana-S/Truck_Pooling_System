@@ -134,4 +134,10 @@ export const returnLoadAPI = {
   updateOrgRequest: (id, data) => API.put(`/return-loads/organization/${id}`, data),
 };
 
+export const paymentAPI = {
+  create: (data) => API.post('/payments', data),
+  verify: (data) => API.post('/payments/razorpay/verify', data),
+  getForShipment: (shipmentId) => API.get(`/payments/shipment/${shipmentId}`),
+};
+
 export default API;

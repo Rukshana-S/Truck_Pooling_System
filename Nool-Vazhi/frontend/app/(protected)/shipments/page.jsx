@@ -4,7 +4,7 @@ import { io } from 'socket.io-client';
 import LiveNotificationBanner from '@/components/LiveNotificationBanner';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
-import { shipmentAPI } from '@/services/api';
+import { shipmentAPI, paymentAPI } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import ConfirmationModal from '@/components/ConfirmationModal';
 import { toast } from 'react-hot-toast';
@@ -81,6 +81,96 @@ export default function Shipments() {
       fetchShipments();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Update failed');
+    }
+  };
+
+  const handlePayAdvance = async (shipment) => {
+    try {
+      const advanceAmount = Math.round(shipment.cost.total * 0.1);
+      
+      let payload = null;
+
+      // 1. Check for existing payment
+      try {
+        const getRes = await paymentAPI.getForShipment(shipment._id);
+        const payments = getRes.data.data || [];
+        const existingAdvance = payments.find(p => p.type === 'Advance' && p.status === 'Pending Advance');
+        
+        if (existingAdvance && existingAdvance.razorpayOrderId) {
+          payload = {
+            payment: existingAdvance,
+            razorpayOrder: {
+              id: existingAdvance.razorpayOrderId,
+              amount: existingAdvance.amount * 100
+            }
+          };
+        }
+      } catch (getErr) {
+        console.error('Error checking existing payments:', getErr);
+      }
+
+      // 2. If no existing payment, create one
+      if (!payload) {
+        try {
+          const { data: apiResponse } = await paymentAPI.create({
+            shipmentId: shipment._id,
+            amount: advanceAmount,
+            type: 'Advance'
+          });
+          payload = apiResponse.data;
+        } catch (createErr) {
+          // Graceful fallback if 409 Conflict is returned
+          if (createErr.response?.status === 409 && createErr.response?.data?.existingPayment) {
+            const existing = createErr.response.data.existingPayment;
+            payload = {
+              payment: existing,
+              razorpayOrder: {
+                id: existing.razorpayOrderId,
+                amount: existing.amount * 100
+              }
+            };
+          } else {
+            throw createErr;
+          }
+        }
+      }
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_TAbp16UZYjRwe5', // Default to test key for safety
+        amount: payload.razorpayOrder.amount,
+        currency: 'INR',
+        name: 'Nool-Vazhi',
+        description: `Advance Payment for Shipment ${shipment.shipmentId}`,
+        order_id: payload.razorpayOrder.id,
+        handler: async function (response) {
+          try {
+            await paymentAPI.verify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              paymentId: payload.payment._id,
+              status: 'Advance Paid'
+            });
+            toast.success('Advance payment successful!');
+            fetchShipments();
+          } catch (verifyErr) {
+            toast.error(verifyErr.response?.data?.message || 'Payment verification failed');
+          }
+        },
+        prefill: {
+          name: user?.businessName || user?.name || '',
+          email: user?.email || '',
+          contact: user?.phone || ''
+        },
+        theme: {
+          color: '#1E3A8A' // Nool-Vazhi primary color
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to initiate payment');
     }
   };
 
@@ -177,9 +267,15 @@ export default function Shipments() {
                 <div style={styles.shipActions}>
                   {isDriver ? (
                     s.status !== 'Delivered' && s.status !== 'Cancelled' ? (
-                      <button className="btn-primary" style={{ padding: '8px 20px', fontSize: 13 }} onClick={() => openModal(s)}>
-                        <i className="fa-solid fa-pen"></i> Update Status
-                      </button>
+                      s.paymentStatus === 'Pending Advance' ? (
+                        <button className="btn-secondary" style={{ padding: '8px 20px', fontSize: 13, cursor: 'not-allowed', opacity: 0.7 }} disabled>
+                          <i className="fa-solid fa-lock"></i> Waiting for Advance Payment
+                        </button>
+                      ) : (
+                        <button className="btn-primary" style={{ padding: '8px 20px', fontSize: 13 }} onClick={() => openModal(s)}>
+                          <i className="fa-solid fa-pen"></i> Update Status
+                        </button>
+                      )
                     ) : (
                       <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                         <span style={{ color: '#22c55e', fontWeight: 600, fontSize: 13 }}>
@@ -202,6 +298,11 @@ export default function Shipments() {
                           <i className="fa-solid fa-location-dot"></i> Track
                         </button>
                       </Link>
+                      {s.driver && s.paymentStatus === 'Pending Advance' && (
+                        <button className="btn-primary" style={{ padding: '8px 20px', fontSize: 13, background: '#10b981', border: 'none' }} onClick={() => handlePayAdvance(s)}>
+                          <i className="fa-solid fa-credit-card"></i> Pay Advance (10%)
+                        </button>
+                      )}
                       {!s.driver && s.status === 'Pending' && (
                         <>
                           <button className="btn-secondary" style={{ padding: '8px 16px', fontSize: 13, background: 'white', border: '1px solid #e2e8f0', color: '#64748b', borderRadius: '8px' }} onClick={() => { setEditModal(s); setEditForm({ goodsType: s.goodsType, bundles: s.bundles }); }}>
