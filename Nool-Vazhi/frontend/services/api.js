@@ -119,12 +119,19 @@ export const notificationAPI = {
 };
 
 export const returnLoadAPI = {
+  // Common
+  getAnalytics: () => API.get('/return-loads/analytics'),
+  delete: (id) => API.delete(`/return-loads/${id}`),
+
+  // Driver
   getRecommendations: (currentLocation) => API.get(`/return-loads/recommendations?currentLocation=${encodeURIComponent(currentLocation)}`),
   requestReturnLoad: (data) => API.post('/return-loads/request', data),
-  getHistory: () => API.get('/return-loads/history'),
-  getOrganizationRequests: () => API.get('/return-loads/organization-requests'),
-  updateStatus: (id, status) => API.put(`/return-loads/${id}/status`, { status }),
-  getAnalytics: () => API.get('/return-loads/analytics'),
+  getDriverRequests: () => API.get('/return-loads/driver'),
+  updateDriverRequest: (id, data) => API.put(`/return-loads/driver/${id}`, data),
+
+  // Organization
+  getOrgRequests: () => API.get('/return-loads/organization'),
+  updateOrgRequest: (id, data) => API.put(`/return-loads/organization/${id}`, data),
 };
 
 export default API;

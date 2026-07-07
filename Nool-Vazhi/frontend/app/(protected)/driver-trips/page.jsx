@@ -403,7 +403,7 @@ export default function DriverTrips() {
                     )}
 
                     {trip.status === 'COMPLETED' && (
-                      <Link href={`/driver-trips/return-loads?location=${encodeURIComponent(trip.toLocation)}`}>
+                      <Link href={`/return-loads?location=${encodeURIComponent(trip.toLocation)}`}>
                         <button className="btn-primary" style={{ padding: '7px 16px', border: 'none', borderRadius: 8, background: '#F97316', cursor: 'pointer', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
                           <i className="fa-solid fa-rotate"></i> Find Return Load
                         </button>

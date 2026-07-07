@@ -98,11 +98,18 @@ export default function Shipments() {
             <p style={styles.sub}>{shipments.length} total {isDriver ? 'trips' : 'shipments'}</p>
           </div>
           {!isDriver && (
-            <Link href="/dashboard">
-              <button className="btn-primary">
-                <i className="fa-solid fa-plus"></i> New Shipment
-              </button>
-            </Link>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <Link href="/shipments/return-loads">
+                <button className="btn-primary" style={{ background: '#1E3A8A' }}>
+                  <i className="fa-solid fa-rotate"></i> Return Loads
+                </button>
+              </Link>
+              <Link href="/dashboard">
+                <button className="btn-primary">
+                  <i className="fa-solid fa-plus"></i> New Shipment
+                </button>
+              </Link>
+            </div>
           )}
         </div>
 
