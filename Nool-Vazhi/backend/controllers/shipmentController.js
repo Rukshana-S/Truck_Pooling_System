@@ -1,7 +1,8 @@
+const { handleError } = require('../utils/errorHandler');
 const Shipment = require('../models/Shipment');
 const { createNotification } = require('../services/notificationService');
 
-const calculateCost = (bundles, pickup, drop) => {
+const calculateCost = (bundles) => {
   const baseCost = 1500;
   const perBundle = 200;
   const poolDiscount = bundles >= 5 ? 0.15 : bundles >= 3 ? 0.10 : 0.05;
@@ -43,7 +44,7 @@ const createShipment = async (req, res) => {
       link: '/shipments'
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -68,7 +69,7 @@ const getMyShipments = async (req, res) => {
     }
     res.json(shipments);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -80,7 +81,7 @@ const getShipmentById = async (req, res) => {
     if (!shipment) return res.status(404).json({ message: 'Shipment not found' });
     res.json(shipment);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -128,7 +129,7 @@ const demoUpdateStatus = async (req, res) => {
 
     res.json(shipment);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -263,7 +264,7 @@ const updateShipmentStatus = async (req, res) => {
       }
     }
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -283,7 +284,7 @@ const getDashboardStats = async (req, res) => {
       totalSpent: spent[0]?.total || 0,
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -294,7 +295,7 @@ const getAvailableShipments = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(shipments);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -331,7 +332,7 @@ const acceptShipment = async (req, res) => {
       link: '/driver-trips'
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -371,7 +372,7 @@ const getDriverStats = async (req, res) => {
       monthlyEarnings
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -401,7 +402,7 @@ const updateLocation = async (req, res) => {
       });
     }
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -501,7 +502,7 @@ const getShipperAnalytics = async (req, res) => {
       poolingEfficiency
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -541,7 +542,7 @@ const updateShipment = async (req, res) => {
       link: '/shipments'
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -574,7 +575,7 @@ const deleteShipment = async (req, res) => {
       link: '/shipments'
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 

@@ -1,3 +1,4 @@
+const { handleError } = require('../utils/errorHandler');
 const Notification = require('../models/Notification');
 
 const getNotifications = async (req, res) => {
@@ -18,7 +19,7 @@ const getNotifications = async (req, res) => {
 
     res.json({ notifications, total, unreadCount, page: Number(page), pages: Math.ceil(total / limit) });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -27,7 +28,7 @@ const markAsRead = async (req, res) => {
     await Notification.updateMany({ user: req.user._id, read: false, isDeleted: { $ne: true } }, { read: true });
     res.json({ message: 'All marked as read' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -41,7 +42,7 @@ const markSingleAsRead = async (req, res) => {
     if (!notification) return res.status(404).json({ message: 'Notification not found' });
     res.json(notification);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -55,7 +56,7 @@ const deleteNotification = async (req, res) => {
     if (!notification) return res.status(404).json({ message: 'Notification not found' });
     res.json({ message: 'Notification deleted' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -64,7 +65,7 @@ const deleteAllNotifications = async (req, res) => {
     await Notification.updateMany({ user: req.user._id, isDeleted: { $ne: true } }, { isDeleted: true });
     res.json({ message: 'All notifications deleted' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 

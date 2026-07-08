@@ -1,3 +1,4 @@
+const { handleError } = require('../utils/errorHandler');
 const Shipment = require('../models/Shipment');
 const AuctionRequest = require('../models/AuctionRequest');
 
@@ -49,7 +50,7 @@ const trackShipment = async (req, res) => {
       })),
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 

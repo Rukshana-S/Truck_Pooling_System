@@ -1,3 +1,4 @@
+const { handleError } = require('../utils/errorHandler');
 const Booking = require('../models/Booking');
 const Trip = require('../models/Trip');
 
@@ -111,7 +112,7 @@ const getDriverEarnings = async (req, res) => {
       rows,
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -137,7 +138,7 @@ const updatePayment = async (req, res) => {
     await booking.save();
     res.json({ message: 'Payment updated', paymentStatus: paymentStatus(booking), booking });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 

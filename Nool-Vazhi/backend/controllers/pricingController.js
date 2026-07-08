@@ -1,3 +1,4 @@
+const { handleError } = require('../utils/errorHandler');
 const AuctionRequest = require('../models/AuctionRequest');
 
 const getPricingEstimate = (req, res) => {
@@ -32,7 +33,7 @@ const getPricingEstimate = (req, res) => {
 
 const getSuggestedPrice = async (req, res) => {
   try {
-    const { from, to, weight } = req.query;
+    const { from, to } = req.query;
     if (!from || !to) return res.status(400).json({ message: 'Missing from/to locations' });
 
     const base_rate = 5; // ₹5/kg
@@ -55,7 +56,7 @@ const getSuggestedPrice = async (req, res) => {
       distance_factor
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 

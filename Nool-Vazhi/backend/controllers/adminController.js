@@ -1,3 +1,4 @@
+const { handleError } = require('../utils/errorHandler');
 const User = require('../models/User');
 const Shipment = require('../models/Shipment');
 const AuctionRequest = require('../models/AuctionRequest');
@@ -16,7 +17,7 @@ const getUsers = async (req, res) => {
     const users = await User.find(query).select('-password').sort({ createdAt: -1 });
     res.json(users);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -26,7 +27,7 @@ const getUserById = async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json(user);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -42,7 +43,7 @@ const updateUser = async (req, res) => {
     await user.save();
     res.json(user);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -54,7 +55,7 @@ const deleteUser = async (req, res) => {
     await user.save();
     res.json({ message: 'User soft deleted' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -77,7 +78,7 @@ const suspendUser = async (req, res) => {
       link: '/profile'
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -101,7 +102,7 @@ const approveKyc = async (req, res) => {
       link: '/profile'
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -116,7 +117,7 @@ const getShipments = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(shipments);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -144,7 +145,7 @@ const deleteShipmentAdmin = async (req, res) => {
       link: '/shipments'
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -156,7 +157,7 @@ const getAuctions = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(auctions);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -180,7 +181,7 @@ const cancelAuctionAdmin = async (req, res) => {
       link: '/auction'
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 

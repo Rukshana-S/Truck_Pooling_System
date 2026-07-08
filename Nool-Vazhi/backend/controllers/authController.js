@@ -1,3 +1,4 @@
+const { handleError } = require('../utils/errorHandler');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
@@ -51,7 +52,7 @@ const registerOrg = async (req, res) => {
     await notifyAdmins(req, 'New Organization Registration', `Organization ${businessName || name} has registered and is pending approval.`, 'System', '/admin/users');
     
     respond(user, res, 201);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { handleError(res, err); }
 };
 
 const registerDriver = async (req, res) => {
@@ -97,7 +98,7 @@ const registerDriver = async (req, res) => {
     respond(user, res, 201);
   } catch (err) {
     console.error('registerDriver error:', err.message);
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -107,7 +108,7 @@ const loginOrg = async (req, res) => {
     const user = await User.findOne({ email, role: 'organization' }).select('-kyc');
     if (!user || !(await user.matchPassword(password))) return res.status(401).json({ message: 'Invalid credentials' });
     respond(user, res);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { handleError(res, err); }
 };
 
 const loginDriver = async (req, res) => {
@@ -116,14 +117,14 @@ const loginDriver = async (req, res) => {
     const user = await User.findOne({ email, role: 'driver' }).select('-kyc');
     if (!user || !(await user.matchPassword(password))) return res.status(401).json({ message: 'Invalid credentials' });
     respond(user, res);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { handleError(res, err); }
 };
 
 const getProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select('-password -kyc');
     res.json(user);
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { handleError(res, err); }
 };
 
 const updateProfile = async (req, res) => {
@@ -173,7 +174,7 @@ const updateProfile = async (req, res) => {
       link: '/profile',
       recipientRole: user.role
     });
-  } catch (err) { res.status(500).json({ message: err.message }); }
+  } catch (err) { handleError(res, err); }
 };
 
 const forgotPassword = async (req, res) => {
@@ -249,7 +250,7 @@ const deleteVehicle = async (req, res) => {
 
     res.json({ message: 'Vehicle deleted successfully', user });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -287,7 +288,7 @@ const replaceDocument = async (req, res) => {
     await user.save();
     res.json({ message: 'Document replaced successfully', kyc: user.kyc });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 

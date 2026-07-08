@@ -1,3 +1,4 @@
+const { handleError } = require('../utils/errorHandler');
 const Shipment = require('../models/Shipment');
 const ReturnLoad = require('../models/ReturnLoad');
 const User = require('../models/User');
@@ -13,7 +14,7 @@ const findRecommendations = async (req, res) => {
     if (!driver) return res.status(404).json({ message: 'Driver not found' });
     
     const driverCapacity = driver.vehicleCapacityKg || 0;
-    const vehicleType = driver.vehicleType || '';
+
 
     // Find all pending shipments that are not assigned to a driver
     const availableShipments = await Shipment.find({
@@ -36,8 +37,8 @@ const findRecommendations = async (req, res) => {
     });
 
     res.json(recommendations);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  } catch (err) {
+    handleError(res, err);
   }
 };
 
@@ -93,8 +94,8 @@ const requestReturnLoad = async (req, res) => {
     });
 
     res.status(201).json(returnLoad);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  } catch (err) {
+    handleError(res, err);
   }
 };
 
@@ -127,8 +128,8 @@ const updateDriverRequest = async (req, res) => {
 
     await returnLoad.save();
     res.json(returnLoad);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  } catch (err) {
+    handleError(res, err);
   }
 };
 
@@ -194,8 +195,8 @@ const updateOrgRequest = async (req, res) => {
     }
 
     res.json(returnLoad);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  } catch (err) {
+    handleError(res, err);
   }
 };
 
@@ -226,8 +227,8 @@ const softDeleteReturnLoad = async (req, res) => {
 
     await returnLoad.save();
     res.json({ message: 'Successfully removed.' });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  } catch (err) {
+    handleError(res, err);
   }
 };
 
@@ -240,8 +241,8 @@ const getDriverReturnLoads = async (req, res) => {
       .populate('organizationId', 'businessName name phone')
       .sort({ createdAt: -1 });
     res.json(requests);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  } catch (err) {
+    handleError(res, err);
   }
 };
 
@@ -254,8 +255,8 @@ const getOrgReturnLoads = async (req, res) => {
       .populate('driverId', 'name phone vehicleNumber vehicleCapacityKg rating totalRatings')
       .sort({ createdAt: -1 });
     res.json(requests);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  } catch (err) {
+    handleError(res, err);
   }
 };
 
@@ -299,8 +300,8 @@ const getAnalytics = async (req, res) => {
         successRate
     });
 
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  } catch (err) {
+    handleError(res, err);
   }
 };
 

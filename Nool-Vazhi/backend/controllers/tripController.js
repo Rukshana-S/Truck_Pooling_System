@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const { handleError } = require('../utils/errorHandler');
 const Trip = require('../models/Trip');
 const Booking = require('../models/Booking');
 const { createNotification } = require('../services/notificationService');
@@ -40,7 +40,7 @@ const createTrip = async (req, res) => {
     await trip.populate('driver', 'name phone rating vehicleType vehicleNumber');
     res.status(201).json(trip);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -63,7 +63,7 @@ const searchTrips = async (req, res) => {
 
     res.json(trips);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -149,7 +149,7 @@ const bookTrip = async (req, res) => {
       link: '/driver-trips'
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -159,7 +159,7 @@ const getMyTrips = async (req, res) => {
     const trips = await Trip.find({ driver: req.user._id, isDeleted: { $ne: true } }).sort({ createdAt: -1 });
     res.json(trips);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -174,7 +174,7 @@ const getMyBookings = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(bookings);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -190,7 +190,7 @@ const getTripBookings = async (req, res) => {
       .sort({ createdAt: -1 });
     res.json(bookings);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -223,7 +223,7 @@ const updateTripStatus = async (req, res) => {
       });
     }
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -240,7 +240,7 @@ const getDriverTripStats = async (req, res) => {
       .reduce((sum, b) => sum + b.totalPrice, 0);
     res.json({ total: totalTrips, active: activeTrips, completed: completedTrips, totalEarned });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -252,7 +252,7 @@ const getLocations = async (req, res) => {
     const all = [...new Set([...froms, ...tos])].sort();
     res.json(all);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -289,7 +289,7 @@ const acceptBooking = async (req, res) => {
       link: '/marketplace'
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -303,7 +303,7 @@ const updateLocation = async (req, res) => {
     await trip.save();
     res.json(trip);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -317,7 +317,7 @@ const startTrip = async (req, res) => {
     await trip.save();
     res.json(trip);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -344,7 +344,7 @@ const updateBookingStatus = async (req, res) => {
       link: '/marketplace'
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -377,7 +377,7 @@ const updateBooking = async (req, res) => {
     await booking.save();
     res.json(booking);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -407,7 +407,7 @@ const cancelBooking = async (req, res) => {
       link: '/driver-trips'
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -429,7 +429,7 @@ const deleteBooking = async (req, res) => {
     await booking.save();
     res.json({ message: 'Booking deleted' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -472,7 +472,7 @@ const cancelTrip = async (req, res) => {
       });
     }
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 

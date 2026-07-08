@@ -1,3 +1,4 @@
+const { handleError } = require('../utils/errorHandler');
 const Rating = require('../models/Rating');
 const User = require('../models/User');
 
@@ -39,8 +40,8 @@ const addRating = async (req, res) => {
     }
 
     res.status(201).json({ message: 'Rating submitted successfully', rating: newRating });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  } catch (err) {
+    handleError(res, err);
   }
 };
 
@@ -50,8 +51,8 @@ const getUserRatings = async (req, res) => {
       .populate('fromUser', 'name businessName role')
       .sort({ createdAt: -1 });
     res.json(ratings);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  } catch (err) {
+    handleError(res, err);
   }
 };
 
@@ -85,8 +86,8 @@ const updateRating = async (req, res) => {
     }
 
     res.json({ message: 'Rating updated successfully', rating: existingRating });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  } catch (err) {
+    handleError(res, err);
   }
 };
 

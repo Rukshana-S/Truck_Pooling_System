@@ -1,3 +1,4 @@
+const { handleError } = require('../utils/errorHandler');
 const AuctionRequest = require('../models/AuctionRequest');
 const { createNotification } = require('../services/notificationService');
 const Bid = require('../models/Bid');
@@ -61,7 +62,7 @@ const createAuction = async (req, res) => {
       link: '/auction'
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -80,7 +81,7 @@ const getMyAuctions = async (req, res) => {
     }
     res.json(auctions);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -102,7 +103,7 @@ const getAuctionBids = async (req, res) => {
 
     res.json({ auction, bids });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -169,7 +170,7 @@ const selectDrivers = async (req, res) => {
       link: '/auction'
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -198,7 +199,7 @@ const getOpenAuctions = async (req, res) => {
 
     res.json(auctionsWithBid);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -275,7 +276,7 @@ const placeBid = async (req, res) => {
     }
     res.status(201).json(finalBid);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -308,7 +309,7 @@ const getDriverSelections = async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -386,7 +387,7 @@ const respondToSelections = async (req, res) => {
       });
     }
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -412,7 +413,7 @@ const closeAuction = async (req, res) => {
       link: '/auction'
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -463,7 +464,7 @@ const updateAuctionLocation = async (req, res) => {
       });
     }
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -498,7 +499,7 @@ const updateAuction = async (req, res) => {
     await auction.save();
     res.json(auction);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -527,7 +528,7 @@ const cancelAuction = async (req, res) => {
       link: '/auction'
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -547,7 +548,7 @@ const deleteAuction = async (req, res) => {
     await auction.save();
     res.json({ message: 'Auction deleted' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 
@@ -565,7 +566,7 @@ const withdrawBid = async (req, res) => {
     await broadcastBidUpdate(req, auctionId);
     res.json({ message: 'Bid withdrawn successfully' });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    handleError(res, err);
   }
 };
 

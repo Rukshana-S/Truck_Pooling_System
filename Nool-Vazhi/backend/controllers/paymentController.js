@@ -1,3 +1,4 @@
+const { handleError } = require('../utils/errorHandler');
 const mongoose = require('mongoose');
 const Payment = require('../models/Payment');
 const PaymentService = require('../services/paymentService');
@@ -107,19 +108,19 @@ const createPayment = async (req, res) => {
         razorpayOrder
       }
     });
-  } catch (error) {
-    console.error("Payment Error [createPayment]:", error);
+  } catch (err) {
+    console.error("Payment Error [createPayment]:", err);
     
     // Custom handling for specific errors
-    if (error.message === 'Database connection unavailable.') {
-      return res.status(503).json({ success: false, message: error.message });
+    if (err.message === 'Database connection unavailable.') {
+      return res.status(503).json({ success: false, message: err.message });
     }
-    if (error.message === 'Payment gateway configuration missing.') {
-      return res.status(500).json({ success: false, message: error.message });
+    if (err.message === 'Payment gateway configuration missing.') {
+      return handleError(res, err);
     }
     
     // Default 500 error without exposing stack traces
-    return res.status(500).json({ success: false, message: error.message || 'Internal server error while creating payment.' });
+    return handleError(res, err);
   }
 };
 
@@ -151,9 +152,9 @@ const getPaymentById = async (req, res) => {
     }
 
     return res.json({ success: true, message: 'Payment retrieved successfully.', data: payment });
-  } catch (error) {
-    console.error("Payment Error [getPaymentById]:", error);
-    return res.status(500).json({ success: false, message: error.message || 'Failed to retrieve payment.' });
+  } catch (err) {
+    console.error("Payment Error [getPaymentById]:", err);
+    return handleError(res, err);
   }
 };
 
@@ -173,9 +174,9 @@ const getShipmentPayments = async (req, res) => {
       .sort({ createdAt: 1 });
       
     return res.json({ success: true, message: 'Payments retrieved successfully.', data: payments });
-  } catch (error) {
-    console.error("Payment Error [getShipmentPayments]:", error);
-    return res.status(500).json({ success: false, message: error.message || 'Failed to retrieve shipments.' });
+  } catch (err) {
+    console.error("Payment Error [getShipmentPayments]:", err);
+    return handleError(res, err);
   }
 };
 
@@ -196,9 +197,9 @@ const getMyPayments = async (req, res) => {
       .sort({ createdAt: -1 });
 
     return res.json({ success: true, message: 'Payments retrieved successfully.', data: payments });
-  } catch (error) {
-    console.error("Payment Error [getMyPayments]:", error);
-    return res.status(500).json({ success: false, message: error.message || 'Failed to retrieve payments.' });
+  } catch (err) {
+    console.error("Payment Error [getMyPayments]:", err);
+    return handleError(res, err);
   }
 };
 
@@ -226,12 +227,12 @@ const updatePaymentStatus = async (req, res) => {
     );
 
     return res.json({ success: true, message: 'Payment status updated.', data: updatedPayment });
-  } catch (error) {
-    console.error("Payment Error [updatePaymentStatus]:", error);
-    if (error.message === 'Payment not found') {
+  } catch (err) {
+    console.error("Payment Error [updatePaymentStatus]:", err);
+    if (err.message === 'Payment not found') {
        return res.status(404).json({ success: false, message: 'Payment not found.' });
     }
-    return res.status(500).json({ success: false, message: error.message || 'Failed to update payment status.' });
+    return handleError(res, err);
   }
 };
 
@@ -285,43 +286,36 @@ const verifyRazorpayPayment = async (req, res) => {
     );
 
     // Notify driver about Advance Payment
+    const { createNotification } = require('../services/notificationService');
     if (status === 'Advance Paid') {
-      const io = req.app.get('io');
-      if (io) {
-        const Notification = require('../models/Notification');
-        const notification = await Notification.create({
-          userId: payment.driverId,
-          title: 'Advance Payment Received',
-          message: `The shipper has paid the advance for the shipment. You can now confirm the pickup.`,
-          type: 'Payment',
-          relatedId: payment.shipmentId,
-          onModel: 'Shipment'
-        });
-        io.to(payment.driverId.toString()).emit('notification', notification);
-      }
+      await createNotification({ app: req.app }, payment.driverId, {
+        title: 'Advance Payment Received',
+        message: `The shipper has paid the advance for the shipment. You can now confirm the pickup.`,
+        type: 'Payment',
+        category: 'Payments',
+        priority: 'High',
+        relatedEntityId: payment.shipmentId,
+        entityType: 'Shipment'
+      });
     } else if (status === 'Fully Paid') {
-      const io = req.app.get('io');
-      if (io) {
-        const Notification = require('../models/Notification');
-        const notification = await Notification.create({
-          userId: payment.driverId,
-          title: 'Final Payment Received',
-          message: `The shipper has paid the final amount (90%) for the shipment.`,
-          type: 'Payment',
-          relatedId: payment.shipmentId,
-          onModel: 'Shipment'
-        });
-        io.to(payment.driverId.toString()).emit('notification', notification);
-      }
+      await createNotification({ app: req.app }, payment.driverId, {
+        title: 'Final Payment Received',
+        message: `The shipper has paid the final amount (90%) for the shipment.`,
+        type: 'Payment',
+        category: 'Payments',
+        priority: 'High',
+        relatedEntityId: payment.shipmentId,
+        entityType: 'Shipment'
+      });
     }
 
     return res.json({ success: true, message: 'Payment verified successfully.', data: updatedPayment });
-  } catch (error) {
-    console.error("Payment Error [verifyRazorpayPayment]:", error);
-    if (error.message === 'Payment gateway configuration missing.') {
-      return res.status(500).json({ success: false, message: error.message });
+  } catch (err) {
+    console.error("Payment Error [verifyRazorpayPayment]:", err);
+    if (err.message === 'Payment gateway configuration missing.') {
+      return handleError(res, err);
     }
-    return res.status(500).json({ success: false, message: error.message || 'Payment verification failed.' });
+    return handleError(res, err);
   }
 };
 
