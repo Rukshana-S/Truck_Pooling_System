@@ -659,7 +659,7 @@ const styles = {
   empty: { textAlign: 'center', padding: '60px 20px', color: '#94a3b8', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 },
   tripList: { display: 'flex', flexDirection: 'column', gap: 16 },
   tripCard: { padding: 24 },
-  tripTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 },
+  tripTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14, flexWrap: 'wrap', gap: 12 },
   tripId: { fontSize: 11, color: '#94a3b8', fontWeight: 600, marginBottom: 4, letterSpacing: '0.5px' },
   routeRow: { display: 'flex', alignItems: 'center', gap: 10 },
   city: { fontSize: 18, fontWeight: 700, color: '#1e293b' },

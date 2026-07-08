@@ -1,5 +1,5 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -34,14 +34,56 @@ export default function Sidebar() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const handleResize = () => {
+      const width = window.innerWidth;
+      setIsMobile(width <= 768);
+      if (width > 768 && width <= 1024) {
+        setCollapsed(true);
+      } else if (width > 1024) {
+        setCollapsed(false);
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const isAdmin = user?.role === 'admin';
   const isDriver = user?.role === 'driver';
   const navItems = isAdmin ? adminNavItems : isDriver ? driverNavItems : orgNavItems;
 
   const handleLogout = () => { logout(); router.push('/'); };
 
+  if (!mounted) return <aside style={{ ...styles.aside, width: 240 }}></aside>;
+
+  const effectiveCollapsed = isMobile ? false : collapsed;
+
   return (
-    <aside style={{ ...styles.aside, width: collapsed ? 72 : 240 }}>
+    <>
+      {/* Mobile Hamburger Button */}
+      {isMobile && (
+        <div style={{ position: 'fixed', top: 16, left: 16, zIndex: 990 }}>
+          <button className="hamburger-btn" onClick={() => setMobileOpen(true)}>
+            <i className="fa-solid fa-bars"></i>
+          </button>
+        </div>
+      )}
+
+      {/* Mobile Drawer Overlay */}
+      {isMobile && mobileOpen && (
+        <div className="drawer-overlay" onClick={() => setMobileOpen(false)}></div>
+      )}
+
+      <aside 
+        className={isMobile ? `sidebar-drawer ${mobileOpen ? '' : 'closed'}` : ''}
+        style={!isMobile ? { ...styles.aside, width: collapsed ? 72 : 240 } : styles.aside}
+      >
       {/* Background image + overlay contained here */}
       <div style={styles.bgWrap}>
         <div style={styles.bgImg} />
@@ -51,18 +93,25 @@ export default function Sidebar() {
       {/* All content sits above via position relative + zIndex */}
       <div style={styles.content}>
         <div style={styles.header}>
-          {!collapsed && (
+          {!effectiveCollapsed && (
             <Link href="/" style={styles.logo}>
               <i className="fa-solid fa-truck" style={{ color: '#F97316' }}></i>
               <span>Nool<span style={{ color: '#F97316' }}>-Vazhi</span></span>
             </Link>
           )}
-          <button style={styles.collapseBtn} onClick={() => setCollapsed(!collapsed)}>
-            <i className={`fa-solid ${collapsed ? 'fa-chevron-right' : 'fa-chevron-left'}`}></i>
-          </button>
+          {!isMobile && (
+            <button style={styles.collapseBtn} onClick={() => setCollapsed(!collapsed)}>
+              <i className={`fa-solid ${collapsed ? 'fa-chevron-right' : 'fa-chevron-left'}`}></i>
+            </button>
+          )}
+          {isMobile && (
+            <button style={styles.collapseBtn} onClick={() => setMobileOpen(false)}>
+              <i className="fa-solid fa-xmark"></i>
+            </button>
+          )}
         </div>
 
-        {!collapsed && user && (
+        {!effectiveCollapsed && user && (
           <div style={styles.userCard}>
             <div style={styles.avatar}>{(user.name || user.businessName || 'U')[0].toUpperCase()}</div>
             <div>
@@ -72,28 +121,30 @@ export default function Sidebar() {
           </div>
         )}
 
-        {user && <NotificationBell collapsed={collapsed} />}
+        {user && <NotificationBell collapsed={effectiveCollapsed} />}
 
         <nav style={styles.nav}>
           {navItems.map(({ path, icon, label }) => (
             <Link
               key={path}
               href={path}
+              onClick={() => isMobile && setMobileOpen(false)}
               style={{ ...styles.navItem, ...(pathname === path ? styles.navItemActive : {}) }}
-              title={collapsed ? label : ''}
+              title={effectiveCollapsed ? label : ''}
             >
               <i className={icon} style={styles.navIcon}></i>
-              {!collapsed && <span>{label}</span>}
+              {!effectiveCollapsed && <span>{label}</span>}
             </Link>
           ))}
         </nav>
 
-        <button onClick={handleLogout} style={styles.logoutBtn} title={collapsed ? 'Logout' : ''}>
+        <button onClick={handleLogout} style={styles.logoutBtn} title={effectiveCollapsed ? 'Logout' : ''}>
           <i className="fa-solid fa-right-from-bracket"></i>
-          {!collapsed && <span>Logout</span>}
+          {!effectiveCollapsed && <span>Logout</span>}
         </button>
       </div>
     </aside>
+    </>
   );
 }
 

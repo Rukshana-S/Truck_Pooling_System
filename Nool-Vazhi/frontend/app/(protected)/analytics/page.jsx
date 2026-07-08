@@ -47,7 +47,7 @@ export default function ShipperAnalytics() {
   return (
     <div style={styles.layout}>
       <Sidebar />
-      <main style={styles.main}>
+      <main className="p-mobile-16" style={styles.main}>
         <div style={styles.container}>
           <div style={styles.header}>
             <h1 style={styles.title}>Logistics <span style={{ color: '#F97316' }}>Analytics</span></h1>
@@ -104,7 +104,7 @@ export default function ShipperAnalytics() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginBottom: 30 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: 30 }}>
             <div className="card" style={styles.chartCard}>
               <h3>Monthly Spending</h3>
               {data.monthlySpend?.length > 0 ? (
@@ -162,7 +162,7 @@ export default function ShipperAnalytics() {
 }
 
 const styles = {
-  layout: { display: 'flex', minHeight: '100vh' },
+  layout: { display: 'flex', minHeight: '100vh', width: '100vw', overflowX: 'hidden' },
   main: { flex: 1, background: '#f8fafc', padding: '40px 20px', overflowY: 'auto' },
   container: { maxWidth: 1200, margin: '0 auto' },
   header: { marginBottom: 30 },

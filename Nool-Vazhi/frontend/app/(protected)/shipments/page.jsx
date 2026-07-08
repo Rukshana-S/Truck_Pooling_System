@@ -304,7 +304,7 @@ export default function Shipments() {
   return (
     <div style={styles.layout}>
       <Sidebar />
-      <main style={styles.main}>
+      <main className="p-mobile-16" style={styles.main}>
         <LiveNotificationBanner categoryMatch="Shipments" />
         <div style={styles.header}>
           <div>
@@ -369,34 +369,36 @@ export default function Shipments() {
                 </div>
 
                 {s.status !== 'Cancelled' && (
-                  <div style={{ ...styles.timelineContainer, width: '100%', overflowX: 'auto', paddingBottom: 16, marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
-                    {ADVANCED_STATUS_STAGES.map((stage, index) => {
-                      const state = getAdvancedStageState(s.currentStatus, stage.label);
-                      return (
-                        <div key={stage.label} style={{...styles.timelineStep, minWidth: 90}}>
-                          <div style={{
-                            ...styles.timelineIcon,
-                            ...(state === 'completed' ? styles.timelineIconCompleted : {}),
-                            ...(state === 'active' ? styles.timelineIconActive : {})
-                          }}>
-                            <i className={`fa-solid ${stage.icon}`}></i>
-                          </div>
-                          <div style={{
-                            ...styles.timelineLabel,
-                            ...(state === 'completed' ? styles.timelineLabelCompleted : {}),
-                            ...(state === 'active' ? styles.timelineLabelActive : {})
-                          }}>
-                            {stage.label}
-                          </div>
-                          {index < ADVANCED_STATUS_STAGES.length - 1 && (
+                  <div className="responsive-table-wrap" style={{ border: 'none', boxShadow: 'none', marginBottom: 16 }}>
+                    <div style={{ ...styles.timelineContainer, width: '100%', paddingBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
+                      {ADVANCED_STATUS_STAGES.map((stage, index) => {
+                        const state = getAdvancedStageState(s.currentStatus, stage.label);
+                        return (
+                          <div key={stage.label} style={{...styles.timelineStep, minWidth: 90}}>
                             <div style={{
-                              ...styles.timelineLine,
-                              ...(state === 'completed' ? styles.timelineLineCompleted : {})
-                            }}></div>
-                          )}
-                        </div>
-                      );
-                    })}
+                              ...styles.timelineIcon,
+                              ...(state === 'completed' ? styles.timelineIconCompleted : {}),
+                              ...(state === 'active' ? styles.timelineIconActive : {})
+                            }}>
+                              <i className={`fa-solid ${stage.icon}`}></i>
+                            </div>
+                            <div style={{
+                              ...styles.timelineLabel,
+                              ...(state === 'completed' ? styles.timelineLabelCompleted : {}),
+                              ...(state === 'active' ? styles.timelineLabelActive : {})
+                            }}>
+                              {stage.label}
+                            </div>
+                            {index < ADVANCED_STATUS_STAGES.length - 1 && (
+                              <div style={{
+                                ...styles.timelineLine,
+                                ...(state === 'completed' ? styles.timelineLineCompleted : {})
+                              }}></div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
 
@@ -577,8 +579,8 @@ export default function Shipments() {
 }
 
 const styles = {
-  layout: { display: 'flex', minHeight: '100vh' },
-  main: { flex: 1, padding: '32px', background: '#f8fafc' },
+  layout: { display: 'flex', minHeight: '100vh', width: '100vw', overflowX: 'hidden' },
+  main: { flex: 1, padding: '32px', background: '#f8fafc', overflowY: 'auto' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28, flexWrap: 'wrap', gap: 16 },
   title: { fontSize: 28, fontWeight: 800, color: '#1e293b' },
   sub: { color: '#64748b', marginTop: 4 },
@@ -589,12 +591,12 @@ const styles = {
   empty: { textAlign: 'center', padding: 80, color: '#94a3b8', display: 'flex', flexDirection: 'column', alignItems: 'center' },
   list: { display: 'flex', flexDirection: 'column', gap: 16 },
   shipCard: { padding: '24px' },
-  shipTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
+  shipTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, flexWrap: 'wrap', gap: 12 },
   shipId: { fontSize: 12, color: '#94a3b8', fontWeight: 600, marginBottom: 6, letterSpacing: '0.5px' },
   shipRoute: { display: 'flex', alignItems: 'center', gap: 10 },
   city: { fontSize: 18, fontWeight: 700, color: '#1e293b' },
-  shipMeta: { display: 'flex', gap: 24, flexWrap: 'wrap', marginBottom: 16, paddingTop: 16, borderTop: '1px solid #f1f5f9' },
-  metaItem: { display: 'flex', flexDirection: 'column', gap: 2 },
+  shipMeta: { display: 'flex', gap: 24, flexWrap: 'wrap', marginBottom: 16, paddingTop: 16, borderTop: '1px solid #f1f5f9', rowGap: 16, columnGap: 24 },
+  metaItem: { display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'flex-start', textAlign: 'left' },
   metaLabel: { fontSize: 11, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' },
   shipActions: { display: 'flex', gap: 10, alignItems: 'center' },
   timelineContainer: { display: 'flex', alignItems: 'center', gap: 4, minWidth: 400 },

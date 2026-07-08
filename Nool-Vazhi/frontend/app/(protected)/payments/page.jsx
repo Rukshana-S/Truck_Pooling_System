@@ -176,7 +176,7 @@ export default function PaymentsDashboard() {
   return (
     <div style={styles.layout}>
       <Sidebar />
-      <main style={styles.main}>
+      <main className="p-mobile-16" style={styles.main}>
         <LiveNotificationBanner categoryMatch="Payment" />
         
         <div style={styles.header}>
@@ -266,8 +266,8 @@ export default function PaymentsDashboard() {
           ) : filteredPayments.length === 0 ? (
             <div style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>No payments found.</div>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={styles.table}>
+            <div className="responsive-table-wrap">
+              <table className="responsive-table" style={styles.table}>
                 <thead>
                   <tr>
                     <th style={styles.th}>Payment ID</th>
@@ -352,31 +352,33 @@ export default function PaymentsDashboard() {
               {/* Visual Payment Timeline */}
               <div style={{ marginTop: 24 }}>
                 <h4 style={{ fontSize: 13, color: '#64748b', textTransform: 'uppercase', marginBottom: 16 }}>Payment Lifecycle</h4>
-                <div style={styles.timelineContainer}>
-                  {getPaymentStages(selectedPayment).map((stage, index, arr) => (
-                    <div key={stage.label} style={styles.timelineStep}>
-                      <div style={{
-                        ...styles.timelineIcon,
-                        ...(stage.state === 'completed' ? styles.timelineIconCompleted : {}),
-                        ...(stage.state === 'active' ? styles.timelineIconActive : {})
-                      }}>
-                        <i className={`fa-solid ${stage.icon}`}></i>
-                      </div>
-                      <div style={{
-                        ...styles.timelineLabel,
-                        ...(stage.state === 'completed' ? styles.timelineLabelCompleted : {}),
-                        ...(stage.state === 'active' ? styles.timelineLabelActive : {})
-                      }}>
-                        {stage.label}
-                      </div>
-                      {index < arr.length - 1 && (
+                <div className="responsive-table-wrap" style={{ border: 'none', boxShadow: 'none' }}>
+                  <div style={styles.timelineContainer}>
+                    {getPaymentStages(selectedPayment).map((stage, index, arr) => (
+                      <div key={stage.label} style={styles.timelineStep}>
                         <div style={{
-                          ...styles.timelineLine,
-                          ...(stage.state === 'completed' ? styles.timelineLineCompleted : {})
-                        }}></div>
-                      )}
-                    </div>
-                  ))}
+                          ...styles.timelineIcon,
+                          ...(stage.state === 'completed' ? styles.timelineIconCompleted : {}),
+                          ...(stage.state === 'active' ? styles.timelineIconActive : {})
+                        }}>
+                          <i className={`fa-solid ${stage.icon}`}></i>
+                        </div>
+                        <div style={{
+                          ...styles.timelineLabel,
+                          ...(stage.state === 'completed' ? styles.timelineLabelCompleted : {}),
+                          ...(stage.state === 'active' ? styles.timelineLabelActive : {})
+                        }}>
+                          {stage.label}
+                        </div>
+                        {index < arr.length - 1 && (
+                          <div style={{
+                            ...styles.timelineLine,
+                            ...(stage.state === 'completed' ? styles.timelineLineCompleted : {})
+                          }}></div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -409,7 +411,7 @@ export default function PaymentsDashboard() {
       {/* Receipt Preview Modal */}
       {showReceiptPreview && selectedPayment && (
         <div style={styles.modalOverlay}>
-          <div style={{ ...styles.modalCard, maxWidth: 880, background: '#f1f5f9' }}>
+          <div className="responsive-modal" style={{ ...styles.modalCard, maxWidth: 880, background: '#f1f5f9' }}>
             <div style={styles.modalHeader}>
               <h3 style={styles.modalTitle}>Receipt Preview</h3>
               <button style={styles.closeBtn} onClick={() => setShowReceiptPreview(false)} disabled={generating}>
@@ -417,9 +419,9 @@ export default function PaymentsDashboard() {
               </button>
             </div>
             
-            <div style={{ padding: 20, maxHeight: '65vh', overflowY: 'auto', display: 'flex', justifyContent: 'center' }}>
+            <div className="responsive-table-wrap" style={{ padding: 20, maxHeight: '65vh', overflowY: 'auto', display: 'flex', justifyContent: 'center', border: 'none', boxShadow: 'none' }}>
               {/* Scale down the 1123px component for preview without shrinking the actual generated component */}
-              <div style={{ transform: 'scale(0.7)', transformOrigin: 'top center' }}>
+              <div style={{ transform: 'scale(0.7)', transformOrigin: 'top center', minWidth: '1123px' }}>
                 <ReceiptPDF payment={selectedPayment} />
               </div>
             </div>
@@ -449,7 +451,7 @@ export default function PaymentsDashboard() {
       {/* Report Preview Modal */}
       {showReportPreview && (
         <div style={styles.modalOverlay}>
-          <div style={{ ...styles.modalCard, maxWidth: 880, background: '#f1f5f9' }}>
+          <div className="responsive-modal" style={{ ...styles.modalCard, maxWidth: 880, background: '#f1f5f9' }}>
             <div style={styles.modalHeader}>
               <h3 style={styles.modalTitle}>Consolidated Report Preview</h3>
               <button style={styles.closeBtn} onClick={() => setShowReportPreview(false)} disabled={generating}>
@@ -489,7 +491,7 @@ export default function PaymentsDashboard() {
 }
 
 const styles = {
-  layout: { display: 'flex', minHeight: '100vh' },
+  layout: { display: 'flex', minHeight: '100vh', width: '100vw', overflowX: 'hidden' },
   main: { flex: 1, padding: '32px', background: '#f8fafc', overflowY: 'auto' },
   header: { marginBottom: 28 },
   title: { fontSize: 28, fontWeight: 800, color: '#1e293b' },

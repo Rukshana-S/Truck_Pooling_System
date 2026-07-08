@@ -59,7 +59,7 @@ export default function Landing() {
               </button>
             </Link>
           </div>
-          <div style={styles.statsGrid}>
+          <div className="grid-2 grid-4-desktop" style={{ gap: 16, maxWidth: 800, margin: '0 auto' }}>
             {stats.map((s, i) => (
               <div key={i} style={styles.statCard}>
                 <div style={styles.statValue}>{s.value}</div>
@@ -93,7 +93,7 @@ export default function Landing() {
 
       {/* Features Split */}
       <section style={{ ...styles.section, background: '#f1f5f9' }}>
-        <div style={{ ...styles.container, ...styles.splitGrid }}>
+        <div className="grid-2" style={styles.container}>
           <div style={styles.splitLeft} className="fade-in">
             <h2 style={styles.splitTitle}>Everything You Need for <span style={{ color: '#F97316' }}>Seamless Logistics</span></h2>
             <div style={styles.bulletList}>
@@ -158,7 +158,7 @@ const styles = {
   heroTitle: { fontSize: 'clamp(36px, 6vw, 72px)', fontWeight: 800, color: 'white', lineHeight: 1.15, marginBottom: 20 },
   heroSub: { fontSize: 18, color: 'rgba(255,255,255,0.8)', maxWidth: 600, margin: '0 auto 36px', lineHeight: 1.7 },
   heroBtns: { display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 60 },
-  statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, maxWidth: 800, margin: '0 auto' },
+  heroBtns: { display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 60 },
   statCard: { background: 'rgba(255,255,255,0.1)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 14, padding: '20px 16px', textAlign: 'center' },
   statValue: { fontSize: 26, fontWeight: 800, color: 'white', marginBottom: 4 },
   statLabel: { fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: 500 },
@@ -172,7 +172,7 @@ const styles = {
   featureIcon: { fontSize: 28, color: '#1E3A8A' },
   featureTitle: { fontSize: 18, fontWeight: 700, color: '#1e293b', marginBottom: 10 },
   featureDesc: { color: '#64748b', fontSize: 14, lineHeight: 1.6 },
-  splitGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 60, alignItems: 'center' },
+  featureDesc: { color: '#64748b', fontSize: 14, lineHeight: 1.6 },
   splitLeft: {},
   splitTitle: { fontSize: 'clamp(22px, 3vw, 34px)', fontWeight: 800, color: '#1e293b', lineHeight: 1.3, marginBottom: 28 },
   bulletList: { display: 'flex', flexDirection: 'column', gap: 12 },

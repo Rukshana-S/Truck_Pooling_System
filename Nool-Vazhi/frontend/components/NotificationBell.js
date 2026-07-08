@@ -27,9 +27,11 @@ export default function NotificationBell({ collapsed }) {
     const updatePosition = () => {
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
+        const isMobile = window.innerWidth <= 768;
         setDropdownPos({
           top: rect.bottom + 8,
-          left: collapsed ? rect.right + 10 : rect.left,
+          left: isMobile ? 16 : (collapsed ? rect.right + 10 : rect.left),
+          width: isMobile ? window.innerWidth - 32 : 360,
         });
       }
     };
@@ -52,9 +54,13 @@ export default function NotificationBell({ collapsed }) {
   const toggleOpen = () => {
     if (!open && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
+      const isMobile = window.innerWidth <= 768;
+      const availableHeight = window.innerHeight - rect.bottom - 20;
       setDropdownPos({
-        top: rect.bottom + 8,
-        left: collapsed ? rect.right + 10 : rect.left,
+        top: rect.bottom + 10,
+        left: isMobile ? 16 : (collapsed ? rect.right + 10 : rect.left),
+        width: isMobile ? window.innerWidth - 32 : 360,
+        maxHeight: isMobile ? window.innerHeight - rect.bottom - 20 : Math.min(480, window.innerHeight - rect.bottom - 20)
       });
     }
     setOpen(!open);
@@ -78,14 +84,14 @@ export default function NotificationBell({ collapsed }) {
         position: 'fixed', 
         top: dropdownPos.top, 
         left: dropdownPos.left,
-        width: 360, 
+        width: dropdownPos.width || 360, 
         background: 'white', 
         borderRadius: 12,
         boxShadow: '0 10px 40px rgba(0,0,0,0.3)', 
         zIndex: 9999, 
         display: 'flex', 
         flexDirection: 'column', 
-        maxHeight: 480,
+        maxHeight: dropdownPos.maxHeight || 480,
         animation: 'slideDownFade 0.2s ease-out'
       }}>
       <div style={{ padding: '16px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', borderTopLeftRadius: 12, borderTopRightRadius: 12, flexShrink: 0 }}>
@@ -139,19 +145,11 @@ export default function NotificationBell({ collapsed }) {
       </div>
       
       <div style={{ flexShrink: 0 }}>
-        {notifications.length > 5 ? (
-          <div 
-            onClick={() => { setOpen(false); router.push('/notifications'); }}
-            style={{ padding: '14px', textAlign: 'center', background: '#f8fafc', color: '#0F172A', fontSize: 13, fontWeight: 600, cursor: 'pointer', borderTop: '1px solid #e2e8f0', borderBottomLeftRadius: 12, borderBottomRightRadius: 12 }}>
-            View All Notifications
-          </div>
-        ) : (notifications.length > 0 && (
-          <div 
-            onClick={() => { setOpen(false); router.push('/notifications'); }}
-            style={{ padding: '14px', textAlign: 'center', background: '#f8fafc', color: '#0F172A', fontSize: 13, fontWeight: 600, cursor: 'pointer', borderTop: '1px solid #e2e8f0', borderBottomLeftRadius: 12, borderBottomRightRadius: 12 }}>
-            Go to Dashboard
-          </div>
-        ))}
+        <div 
+          onClick={() => { setOpen(false); router.push('/notifications'); }}
+          style={{ padding: '14px', textAlign: 'center', background: '#f8fafc', color: '#0F172A', fontSize: 13, fontWeight: 600, cursor: 'pointer', borderTop: '1px solid #e2e8f0', borderBottomLeftRadius: 12, borderBottomRightRadius: 12 }}>
+          View All Notifications
+        </div>
       </div>
     </div>
   );

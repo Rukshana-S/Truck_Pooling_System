@@ -120,7 +120,7 @@ export default function Profile() {
   return (
     <div style={styles.layout}>
       <Sidebar />
-      <main style={styles.main}>
+      <main className="p-mobile-16" style={styles.main}>
         <div style={styles.header}>
           <div>
             <h1 style={styles.title}>
@@ -145,7 +145,7 @@ export default function Profile() {
               <i className="fa-solid fa-circle-info" style={{ color: '#1E3A8A', marginRight: 8 }}></i>
               Basic Information
             </h3>
-            <div style={styles.grid}>
+            <div className="grid-2">
               <div className="form-group">
                 <label>Full Name *</label>
                 <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Your name" required />
@@ -176,7 +176,7 @@ export default function Profile() {
                 <i className="fa-solid fa-building" style={{ color: '#1E3A8A', marginRight: 8 }}></i>
                 Business Details
               </h3>
-              <div style={styles.grid}>
+              <div className="grid-2">
                 <div className="form-group">
                   <label>Business Name</label>
                   <input value={form.businessName} onChange={e => setForm({ ...form, businessName: e.target.value })} placeholder="ABC Traders Pvt Ltd" />
@@ -203,7 +203,7 @@ export default function Profile() {
                 <i className="fa-solid fa-truck" style={{ color: '#F97316', marginRight: 8 }}></i>
                 Vehicle Details
               </h3>
-              <div style={styles.grid}>
+              <div className="grid-2">
                 <div className="form-group">
                   <label>License Number</label>
                   <input value={form.licenseNumber} onChange={e => setForm({ ...form, licenseNumber: e.target.value })} placeholder="TN0120230012345" />
@@ -301,7 +301,7 @@ export default function Profile() {
 }
 
 const styles = {
-  layout: { display: 'flex', minHeight: '100vh' },
+  layout: { display: 'flex', minHeight: '100vh', width: '100vw', overflowX: 'hidden' },
   main: { flex: 1, padding: '32px', background: '#f8fafc', overflowY: 'auto' },
   header: { marginBottom: 24 },
   title: { fontSize: 26, fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center' },
@@ -309,6 +309,5 @@ const styles = {
   success: { background: '#d1fae5', color: '#065f46', padding: '12px 16px', borderRadius: 10, marginBottom: 20, fontSize: 14, display: 'flex', alignItems: 'center' },
   error: { background: '#fee2e2', color: '#991b1b', padding: '12px 16px', borderRadius: 10, marginBottom: 20, fontSize: 14, display: 'flex', alignItems: 'center' },
   sectionTitle: { fontSize: 15, fontWeight: 700, color: '#1e293b', marginBottom: 20, display: 'flex', alignItems: 'center' },
-  grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 },
   empty: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' },
 };

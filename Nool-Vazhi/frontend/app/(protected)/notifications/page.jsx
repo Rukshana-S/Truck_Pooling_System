@@ -146,7 +146,7 @@ export default function NotificationsPage() {
   return (
     <div style={styles.layout}>
       <Sidebar />
-      <main style={styles.main}>
+      <main className="p-mobile-16" style={styles.main}>
         {/* HEADER SECTION */}
         <div className="header-area" style={styles.headerArea}>
           <div style={{ flex: 1 }}>
@@ -182,7 +182,7 @@ export default function NotificationsPage() {
         </div>
 
         {/* TOP SUMMARY */}
-        <div className="summary-grid" style={styles.summaryGrid}>
+        <div className="grid-4" style={{ marginBottom: 40 }}>
           <div style={styles.summaryCard}>
             <div style={{...styles.iconBox, background: '#fee2e2', color: '#ef4444'}}><i className="fa-solid fa-envelope"></i></div>
             <div>
@@ -432,7 +432,7 @@ export default function NotificationsPage() {
 }
 
 const styles = {
-  layout: { display: 'flex', minHeight: '100vh', background: '#f8fafc' },
+  layout: { display: 'flex', minHeight: '100vh', background: '#f8fafc', width: '100vw', overflowX: 'hidden' },
   main: { flex: 1, padding: '40px', overflowY: 'auto' },
   headerArea: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32, flexWrap: 'wrap', gap: 24 },
   title: { fontSize: 32, fontWeight: 900, color: '#0F172A', margin: '0 0 8px 0', letterSpacing: '-0.5px' },

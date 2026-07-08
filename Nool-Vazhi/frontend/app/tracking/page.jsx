@@ -440,31 +440,32 @@ export default function Tracking() {
     </main>
   );
 
-  if (user) return <div style={{ display: 'flex', minHeight: '100vh' }}><Sidebar />{content}</div>;
-  return <div><Navbar />{content}<Footer /></div>;
+  if (user) return <div style={styles.layout}><Sidebar />{content}</div>;
+  return <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}><Navbar />{content}<Footer /></div>;
 }
 
 const styles = {
-  main: { flex: 1, padding: '40px 0', background: '#f8fafc' },
+  layout: { display: 'flex', minHeight: '100vh', width: '100vw', overflowX: 'hidden' },
+  main: { flex: 1, padding: '40px 0', background: '#f8fafc', overflowY: 'auto' },
   container: { maxWidth: 1200, margin: '0 auto', padding: '0 24px' },
   header: { textAlign: 'center', marginBottom: 36 },
   title: { fontSize: 'clamp(28px, 4vw, 42px)', fontWeight: 800, color: '#1e293b', marginBottom: 8 },
   sub: { color: '#64748b', fontSize: 16 },
-  searchForm: { display: 'flex', gap: 12 },
-  searchInput: { flex: 1, padding: '14px 18px', border: '1.5px solid #e2e8f0', borderRadius: 10, fontSize: 15, outline: 'none', fontFamily: 'Inter, sans-serif' },
+  searchForm: { display: 'flex', gap: 12, flexWrap: 'wrap' },
+  searchInput: { flex: 1, padding: '14px 18px', border: '1.5px solid #e2e8f0', borderRadius: 10, fontSize: 15, outline: 'none', fontFamily: 'Inter, sans-serif', minWidth: '200px' },
   error: { background: '#fee2e2', color: '#991b1b', padding: '12px 16px', borderRadius: 10, marginTop: 12, fontSize: 14 },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 24 },
-  mapHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 },
+  mapHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 8 },
   cardTitle: { fontSize: 16, fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center' },
   liveDot: { color: '#22c55e', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center' },
-  metricsRow: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 },
+  metricsRow: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 12 },
   metricCard: { background: '#f1f5f9', padding: '12px 16px', borderRadius: 10 },
   metricLabel: { fontSize: 11, color: '#64748b', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 },
   metricValue: { fontSize: 16, color: '#1e293b', fontWeight: 800 },
   mapLine: { width: '100%', height: 6, background: '#e2e8f0', borderRadius: 3, position: 'relative' },
   mapProgress: { position: 'absolute', left: 0, top: 0, height: '100%', background: '#F97316', borderRadius: 3, transition: 'width 1s ease-in-out' },
   mapTruck: { position: 'absolute', top: -12, fontSize: 22, color: '#1E3A8A', transition: 'left 1s ease-in-out' },
-  driverInfo: { display: 'flex', alignItems: 'center', gap: 16, marginTop: 8 },
+  driverInfo: { display: 'flex', alignItems: 'center', gap: 16, marginTop: 8, flexWrap: 'wrap' },
   driverAvatar: { width: 52, height: 52, borderRadius: '50%', background: '#1E3A8A', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 700, flexShrink: 0 },
   driverName: { fontWeight: 700, fontSize: 16, color: '#1e293b', marginBottom: 4 },
   driverRating: { color: '#f59e0b', fontSize: 13, fontWeight: 600, marginBottom: 4, display: 'flex', alignItems: 'center' },

@@ -225,7 +225,7 @@ export default function DriverReturnLoads() {
     <div style={styles.layout}>
       <ConfirmationModal {...confirmModal} />
       <Sidebar />
-      <main style={styles.main}>
+      <main className="p-mobile-16" style={styles.main}>
         <div style={styles.header}>
           <h1 style={styles.title}>Return Loads</h1>
           <p style={styles.sub}>Find matching shipments for your return trips to avoid running empty.</p>
@@ -299,7 +299,7 @@ export default function DriverReturnLoads() {
 }
 
 const styles = {
-  layout: { display: 'flex', minHeight: '100vh' },
+  layout: { display: 'flex', minHeight: '100vh', width: '100vw', overflowX: 'hidden' },
   main: { flex: 1, padding: '32px', background: '#f8fafc', overflowY: 'auto' },
   header: { marginBottom: 24 },
   title: { fontSize: 28, fontWeight: 800, color: '#1e293b' },

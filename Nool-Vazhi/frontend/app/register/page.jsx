@@ -13,7 +13,7 @@ export default function Register() {
         <h2 style={styles.title}>Create Account</h2>
         <p style={styles.sub}>Choose how you want to join Nool-Vazhi</p>
 
-        <div style={styles.options}>
+        <div className="grid-2" style={{ gap: 16, marginBottom: 28 }}>
           <Link href="/register/organization" style={styles.option}>
             <div style={styles.optionIcon}><i className="fa-solid fa-building"></i></div>
             <div style={styles.optionTitle}>Organization</div>
@@ -42,7 +42,7 @@ const styles = {
   logo: { textDecoration: 'none', fontSize: 22, fontWeight: 800, color: '#1E3A8A', display: 'block', marginBottom: 24 },
   title: { fontSize: 26, fontWeight: 800, color: '#1e293b', marginBottom: 6 },
   sub: { color: '#64748b', marginBottom: 32, fontSize: 15 },
-  options: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 28 },
+  sub: { color: '#64748b', marginBottom: 32, fontSize: 15 },
   option: { textDecoration: 'none', border: '2px solid #e2e8f0', borderRadius: 16, padding: 24, textAlign: 'center', transition: 'all 0.2s', cursor: 'pointer', display: 'block' },
   optionIcon: { fontSize: 40, marginBottom: 12, color: '#1E3A8A' },
   optionTitle: { fontSize: 18, fontWeight: 700, color: '#1e293b', marginBottom: 8 },

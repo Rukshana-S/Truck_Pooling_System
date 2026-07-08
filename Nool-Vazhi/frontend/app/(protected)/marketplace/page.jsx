@@ -136,7 +136,7 @@ export default function Marketplace() {
     : null;
 
   const content = (
-    <main style={styles.main}>
+    <main className="p-mobile-16" style={styles.main}>
       <div style={styles.container}>
         <div style={styles.pageHeader}>
           <div>
@@ -372,7 +372,7 @@ export default function Marketplace() {
                         <span style={styles.chip}><i className="fa-solid fa-user" style={{ marginRight: 4 }}></i>{b.trip?.driver?.name}</span>
                       </div>
                     </div>
-                    <div style={styles.bookingRight}>
+                    <div className="align-start-mobile" style={styles.bookingRight}>
                       <div style={styles.bookingPrice}>₹{b.totalPrice?.toLocaleString()}</div>
                       <div style={styles.bookingPriceLabel}>₹{b.pricePerKg}/kg</div>
                       <span style={{ ...styles.statusBadge, background: b.status === 'DELIVERED' ? '#d1fae5' : '#dbeafe', color: b.status === 'DELIVERED' ? '#065f46' : '#1e40af', marginTop: 8, marginBottom: 8 }}>
@@ -461,7 +461,7 @@ export default function Marketplace() {
 }
 
 const styles = {
-  layout: { display: 'flex', minHeight: '100vh' },
+  layout: { display: 'flex', minHeight: '100vh', width: '100vw', overflowX: 'hidden' },
   main: { flex: 1, padding: '32px 0', background: '#f8fafc', overflowY: 'auto' },
   container: { maxWidth: 1100, margin: '0 auto', padding: '0 24px' },
   pageHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28, flexWrap: 'wrap', gap: 16 },
@@ -486,7 +486,7 @@ const styles = {
   discountTag: { fontSize: 11, color: '#22c55e', fontWeight: 600 },
   minNote: { fontSize: 12, color: '#94a3b8', marginTop: 8 },
   modalOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 },
-  modalCard: { background: 'white', borderRadius: 16, padding: 32, width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(0,0,0,0.3)', maxHeight: '90vh', overflowY: 'auto' },
+  modalCard: { background: 'white', borderRadius: 16, padding: 32, width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(0,0,0,0.3)', maxHeight: '90vh', overflowY: 'auto', boxSizing: 'border-box' },
   modalTitle: { fontSize: 18, fontWeight: 700, color: '#1e293b', marginBottom: 6, display: 'flex', alignItems: 'center' },
   modalRoute: { color: '#64748b', fontSize: 14, marginBottom: 20 },
   success: { background: '#d1fae5', color: '#065f46', padding: '12px 16px', borderRadius: 10, marginBottom: 16, fontSize: 14, display: 'flex', alignItems: 'center' },

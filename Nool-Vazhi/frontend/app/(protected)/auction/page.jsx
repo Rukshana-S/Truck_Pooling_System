@@ -227,11 +227,11 @@ export default function ShipperAuction() {
   };
 
   return (
-    <div style={styles.layout}>
+    <div style={{ ...styles.layout, width: '100vw' }}>
       <ConfirmationModal {...modalConfig} />
       <Sidebar />
-      <main style={styles.main}>
-        <LiveNotificationBanner categoryMatch="Auctions" />
+      <main className="p-mobile-16" style={styles.main}>
+        <LiveNotificationBanner categoryMatch="Auction" />
         <div style={styles.header}>
           <div>
             <h1 style={styles.title}>
@@ -616,7 +616,7 @@ export default function ShipperAuction() {
 }
 
 const styles = {
-  layout: { display: 'flex', minHeight: '100vh' },
+  layout: { display: 'flex', minHeight: '100vh', width: '100vw', overflowX: 'hidden' },
   main: { flex: 1, padding: '32px', background: '#f8fafc', overflowY: 'auto' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24, flexWrap: 'wrap', gap: 16 },
   title: { fontSize: 26, fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center' },

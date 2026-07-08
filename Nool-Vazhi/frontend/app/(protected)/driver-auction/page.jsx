@@ -182,7 +182,7 @@ export default function DriverAuction() {
     <div style={styles.layout}>
       <ConfirmationModal {...modalConfig} />
       <Sidebar />
-      <main style={styles.main}>
+      <main className="p-mobile-16" style={styles.main}>
         <div style={styles.header}>
           <div>
             <h1 style={styles.title}>
@@ -193,8 +193,7 @@ export default function DriverAuction() {
           </div>
         </div>
 
-        <LiveNotificationBanner categoryMatch="Auctions" />
-
+        <LiveNotificationBanner categoryMatch="Auction" />
         <div style={styles.tabs}>
           <button style={{ ...styles.tab, ...(tab === 'open' ? styles.tabActive : {}) }} onClick={() => setTab('open')}>
             <i className="fa-solid fa-door-open" style={{ marginRight: 6 }}></i>
@@ -245,7 +244,7 @@ export default function DriverAuction() {
                     </div>
                     
                     {/* Live Bid Metrics */}
-                    <div style={{ display: 'flex', gap: 16, marginTop: 12, marginBottom: 12, padding: '12px', background: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0' }}>
+                    <div className="flex-wrap-mobile" style={{ display: 'flex', gap: 16, marginTop: 12, marginBottom: 12, padding: '12px', background: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0' }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 12, color: '#64748b' }}>Current Lowest Bid</div>
                         <div style={{ fontSize: 16, fontWeight: 700, color: '#1E3A8A' }}>
@@ -401,7 +400,7 @@ export default function DriverAuction() {
                             </div>
                           )}
                         </div>
-                        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+                        <div className="align-start-mobile" style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
                           <div style={{ fontWeight: 800, color: '#22c55e', fontSize: 18 }}>₹{s.totalPrice?.toLocaleString()}</div>
                           <span style={{
                             background: s.driverStatus === 'ACCEPTED' ? '#d1fae5' : s.driverStatus === 'REJECTED' ? '#fee2e2' : '#fef3c7',
@@ -484,7 +483,7 @@ export default function DriverAuction() {
 }
 
 const styles = {
-  layout: { display: 'flex', minHeight: '100vh' },
+  layout: { display: 'flex', minHeight: '100vh', width: '100vw', overflowX: 'hidden' },
   main: { flex: 1, padding: '32px', background: '#f8fafc', overflowY: 'auto' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 16 },
   title: { fontSize: 26, fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center' },

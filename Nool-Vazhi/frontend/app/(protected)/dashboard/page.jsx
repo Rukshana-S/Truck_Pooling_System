@@ -97,7 +97,7 @@ export default function Dashboard() {
   return (
     <div style={styles.layout}>
       <Sidebar />
-      <main style={styles.main}>
+      <main className="p-mobile-16" style={styles.main}>
         <div style={styles.header}>
           <div>
             <h1 style={styles.title}>Dashboard</h1>
@@ -180,12 +180,12 @@ export default function Dashboard() {
                         </span>
                       </div>
                     </div>
-                    <div style={styles.availableRight}>
-                      <div style={styles.earnAmount}>₹{s.cost?.total?.toLocaleString()}</div>
-                      <div style={styles.earnLabel}>Earnings</div>
-                      <button
-                        className="btn-primary"
-                        style={{ padding: '8px 20px', fontSize: 13, marginTop: 8 }}
+                    <div className="w-100-mobile" style={{...styles.availableRight, marginTop: '12px'}}>
+                      <div style={styles.earnAmount}>₹{s.price?.toLocaleString()}</div>
+                      <div style={styles.earnLabel}>Potential Earnings</div>
+                      <button 
+                        className="btn-primary" 
+                        style={{ width: '100%', marginTop: 12 }}
                         onClick={() => handleAccept(s._id)}
                         disabled={accepting === s._id}
                       >
@@ -226,9 +226,9 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Org: Booking Form + Estimate */}
+        {/* Org: Book Shipment & Estimate */}
         {!isDriver && (
-          <div style={styles.bookingGrid}>
+          <div className="grid-2">
             <div className="card">
               <h2 style={styles.cardTitle}>
                 <i className="fa-solid fa-box" style={{ color: '#1E3A8A', marginRight: 8 }}></i>
@@ -298,8 +298,8 @@ export default function Dashboard() {
 
         {/* Org: Analytics Overviews */}
         {!isDriver && analytics && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '24px', marginTop: 24 }}>
-            <div className="card" style={{ padding: 24 }}>
+          <div className="grid-2" style={{ marginTop: 24 }}>
+            <div className="card" style={{ padding: 24, overflowX: 'auto' }}>
               <h3 style={{ fontSize: 16, color: '#1e293b', marginBottom: 16 }}><i className="fa-solid fa-chart-bar" style={{ color: '#1E3A8A', marginRight: 8 }}></i>Monthly Spending</h3>
               {analytics.monthlySpend?.length > 0 ? (
                 <ResponsiveContainer width="100%" height={250}>
@@ -307,7 +307,7 @@ export default function Dashboard() {
                     <XAxis dataKey="month" axisLine={false} tickLine={false} />
                     <YAxis tickFormatter={(val) => `₹${val}`} axisLine={false} tickLine={false} />
                     <Tooltip formatter={(val) => [`₹${val.toLocaleString()}`, 'Spend']} cursor={{ fill: '#f1f5f9' }} />
-                    <Bar dataKey="spend" fill="#1E3A8A" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="spend" fill="#1E3A8A" radius={[6, 6, 0, 0]} maxBarSize={50} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -340,7 +340,7 @@ export default function Dashboard() {
 }
 
 const styles = {
-  layout: { display: 'flex', minHeight: '100vh' },
+  layout: { display: 'flex', minHeight: '100vh', width: '100vw', overflowX: 'hidden' },
   main: { flex: 1, padding: '32px', background: '#f8fafc', overflowY: 'auto' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32, flexWrap: 'wrap', gap: 16 },
   title: { fontSize: 28, fontWeight: 800, color: '#1e293b' },
