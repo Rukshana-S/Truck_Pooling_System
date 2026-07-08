@@ -36,7 +36,9 @@ export const NotificationProvider = ({ children }) => {
     if (user) {
       fetchNotifications(page, filter);
       
-      const newSocket = io('http://localhost:5000');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+      const socketUrl = apiUrl.replace(/\/api\/?$/, ''); // Strip /api to get base URL
+      const newSocket = io(socketUrl);
       
       newSocket.on('connect', () => {
         newSocket.emit('register_user', user._id);

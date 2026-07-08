@@ -53,11 +53,10 @@ export default function DriverAuction() {
   const [liveBids, setLiveBids] = useState({});
 
   useEffect(() => {
-    // Connect to Socket.io
-    const url = typeof window !== 'undefined' && window.location.hostname === 'localhost' 
-      ? 'http://localhost:5000' 
-      : '';
-    socketRef.current = io(url);
+    // Connect to Socket.io using the base URL of the API
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+    const socketUrl = apiUrl.replace(/\/api\/?$/, ''); // Strip /api from the end
+    socketRef.current = io(socketUrl);
 
     socketRef.current.on('bid_update', (data) => {
       setLiveBids(prev => ({

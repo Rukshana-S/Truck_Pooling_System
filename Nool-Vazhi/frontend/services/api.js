@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API = axios.create({ baseURL: '/api' });
+const API = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL || '/api' });
 
 API.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
