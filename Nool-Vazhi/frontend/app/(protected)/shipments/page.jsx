@@ -27,7 +27,8 @@ const ADVANCED_STATUS_STAGES = [
   { label: 'In Transit', icon: 'fa-truck-fast' },
   { label: 'Near Destination', icon: 'fa-location-dot' },
   { label: 'Delivered', icon: 'fa-house-circle-check' },
-  { label: 'Final Payment Completed', icon: 'fa-check-double' }
+  { label: 'Final Payment Completed', icon: 'fa-check-double' },
+  { label: 'Shipment Completed', icon: 'fa-file-invoice-dollar' }
 ];
 
 const getAdvancedStageState = (currentStatus, stageLabel) => {
@@ -363,37 +364,41 @@ export default function Shipments() {
                   {s.status === 'Cancelled' ? (
                     <span className="badge badge-cancelled">Cancelled</span>
                   ) : (
-                    <div style={{ ...styles.timelineContainer, minWidth: '100%', overflowX: 'auto', paddingBottom: 8 }}>
-                      {ADVANCED_STATUS_STAGES.map((stage, index) => {
-                        const state = getAdvancedStageState(s.currentStatus, stage.label);
-                        return (
-                          <div key={stage.label} style={{...styles.timelineStep, minWidth: 90}}>
-                            <div style={{
-                              ...styles.timelineIcon,
-                              ...(state === 'completed' ? styles.timelineIconCompleted : {}),
-                              ...(state === 'active' ? styles.timelineIconActive : {})
-                            }}>
-                              <i className={`fa-solid ${stage.icon}`}></i>
-                            </div>
-                            <div style={{
-                              ...styles.timelineLabel,
-                              ...(state === 'completed' ? styles.timelineLabelCompleted : {}),
-                              ...(state === 'active' ? styles.timelineLabelActive : {})
-                            }}>
-                              {stage.label}
-                            </div>
-                            {index < ADVANCED_STATUS_STAGES.length - 1 && (
-                              <div style={{
-                                ...styles.timelineLine,
-                                ...(state === 'completed' ? styles.timelineLineCompleted : {})
-                              }}></div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
+                    <span className={`badge ${statusClass[s.status] || 'badge-pending'}`}>{s.status}</span>
                   )}
                 </div>
+
+                {s.status !== 'Cancelled' && (
+                  <div style={{ ...styles.timelineContainer, width: '100%', overflowX: 'auto', paddingBottom: 16, marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
+                    {ADVANCED_STATUS_STAGES.map((stage, index) => {
+                      const state = getAdvancedStageState(s.currentStatus, stage.label);
+                      return (
+                        <div key={stage.label} style={{...styles.timelineStep, minWidth: 90}}>
+                          <div style={{
+                            ...styles.timelineIcon,
+                            ...(state === 'completed' ? styles.timelineIconCompleted : {}),
+                            ...(state === 'active' ? styles.timelineIconActive : {})
+                          }}>
+                            <i className={`fa-solid ${stage.icon}`}></i>
+                          </div>
+                          <div style={{
+                            ...styles.timelineLabel,
+                            ...(state === 'completed' ? styles.timelineLabelCompleted : {}),
+                            ...(state === 'active' ? styles.timelineLabelActive : {})
+                          }}>
+                            {stage.label}
+                          </div>
+                          {index < ADVANCED_STATUS_STAGES.length - 1 && (
+                            <div style={{
+                              ...styles.timelineLine,
+                              ...(state === 'completed' ? styles.timelineLineCompleted : {})
+                            }}></div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
 
                 <div style={styles.shipMeta}>
                   <div style={styles.metaItem}><span style={styles.metaLabel}>Goods</span><span>{s.goodsType}</span></div>
@@ -437,16 +442,29 @@ export default function Shipments() {
                               <i className="fa-solid fa-lock"></i> Waiting for Advance Payment
                             </button>
                           );
+                        } else if (s.currentStatus === 'Delivered') {
+                          return (
+                            <button className="btn-secondary" style={{ padding: '8px 20px', fontSize: 13, cursor: 'not-allowed', opacity: 0.7 }} disabled>
+                              <i className="fa-solid fa-hourglass-half"></i> Waiting for Final Payment
+                            </button>
+                          );
                         } else {
                           return null;
                         }
                       })()
                     ) : (
-                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        <span style={{ color: '#22c55e', fontWeight: 600, fontSize: 13 }}>
-                          <i className="fa-solid fa-circle-check" style={{ marginRight: 6 }}></i>
-                          {s.status}
-                        </span>
+                      s.currentStatus === 'Shipment Completed' || s.currentStatus === 'Final Payment Completed' ? (
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                          <span style={{ color: '#10b981', background: '#d1fae5', padding: '6px 12px', borderRadius: '6px', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <i className="fa-solid fa-circle-check"></i> Shipment Completed Successfully
+                          </span>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                          <span style={{ color: '#22c55e', fontWeight: 600, fontSize: 13 }}>
+                            <i className="fa-solid fa-circle-check" style={{ marginRight: 6 }}></i>
+                            {s.status}
+                          </span>
                         
                         {s.status === 'Delivered' && s.paymentStatus === 'Fully Paid' && (
                           <span style={{ color: '#10b981', background: '#d1fae5', padding: '4px 8px', borderRadius: '4px', fontWeight: 600, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -467,6 +485,7 @@ export default function Shipments() {
                           </Link>
                         )}
                       </div>
+                      )
                     )
                   ) : (
                     <>
@@ -475,15 +494,26 @@ export default function Shipments() {
                           <i className="fa-solid fa-location-dot"></i> Track
                         </button>
                       </Link>
-                      {s.driver && s.paymentStatus === 'Pending Advance' && (
-                        <button className="btn-primary" style={{ padding: '8px 20px', fontSize: 13, background: '#10b981', border: 'none' }} onClick={() => handlePayAdvance(s)}>
-                          <i className="fa-solid fa-credit-card"></i> Pay Advance (10%)
-                        </button>
-                      )}
-                      {s.status === 'Delivered' && s.paymentStatus !== 'Fully Paid' && (
-                        <button className="btn-primary" style={{ padding: '8px 20px', fontSize: 13, background: '#10b981', border: 'none' }} onClick={() => handlePayFinal(s)}>
-                          <i className="fa-solid fa-credit-card"></i> Pay Remaining (90%)
-                        </button>
+                      
+                      {s.currentStatus === 'Shipment Completed' || s.currentStatus === 'Final Payment Completed' ? (
+                         <Link href="/payments">
+                           <button className="btn-primary" style={{ padding: '8px 20px', fontSize: 13, background: '#10b981', border: 'none' }}>
+                             <i className="fa-solid fa-file-invoice-dollar"></i> Get Receipt
+                           </button>
+                         </Link>
+                      ) : (
+                        <>
+                          {s.driver && s.paymentStatus === 'Pending Advance' && (
+                            <button className="btn-primary" style={{ padding: '8px 20px', fontSize: 13, background: '#10b981', border: 'none' }} onClick={() => handlePayAdvance(s)}>
+                              <i className="fa-solid fa-credit-card"></i> Pay Advance (10%)
+                            </button>
+                          )}
+                          {s.status === 'Delivered' && s.paymentStatus !== 'Fully Paid' && (
+                            <button className="btn-primary" style={{ padding: '8px 20px', fontSize: 13, background: '#10b981', border: 'none' }} onClick={() => handlePayFinal(s)}>
+                              <i className="fa-solid fa-credit-card"></i> Pay Remaining (90%)
+                            </button>
+                          )}
+                        </>
                       )}
                       {!s.driver && s.status === 'Pending' && (
                         <>

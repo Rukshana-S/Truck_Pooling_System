@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {
-  createShipment, getMyShipments, getShipmentById, updateShipmentStatus,
+  createShipment, getMyShipments, getShipmentById, updateShipmentStatus, demoUpdateStatus,
   getDashboardStats, getAvailableShipments, acceptShipment, getDriverStats, updateLocation, getShipperAnalytics,
   updateShipment, deleteShipment
 } = require('../controllers/shipmentController');
@@ -20,5 +20,6 @@ router.route('/:id')
   .put(updateShipment)
   .delete(deleteShipment);
 router.put('/:id/status', updateShipmentStatus);
+router.put('/:id/demo-status', demoUpdateStatus);
 
 module.exports = router;

@@ -84,18 +84,83 @@ const getShipmentById = async (req, res) => {
   }
 };
 
+const demoUpdateStatus = async (req, res) => {
+  const { status, note } = req.body;
+  try {
+    const shipment = await Shipment.findOne({ _id: req.params.id || req.params.shipmentId, isDeleted: { $ne: true } });
+    if (!shipment) return res.status(404).json({ message: 'Not found' });
+
+    // Old rules (timeline)
+    shipment.status = status;
+    shipment.timeline.push({ status, note: note || status });
+
+    // New advanced tracking rules
+    shipment.currentStatus = status;
+    shipment.statusUpdatedAt = Date.now();
+    shipment.trackingHistory.push({
+      status,
+      note: note || status,
+      timestamp: Date.now()
+    });
+
+    await shipment.save();
+
+    // Create notifications based on status
+    if (status === 'Near Destination') {
+      if (shipment.shipper) {
+        await createNotification(req, shipment.shipper, { title: 'Driver near destination', message: `Shipment ${shipment.shipmentId} is arriving soon.`, category: 'Shipments' });
+      }
+      if (shipment.driver) {
+        await createNotification(req, shipment.driver, { title: 'Shipment updated', message: `Shipment ${shipment.shipmentId} is Near Destination.`, category: 'Shipments' });
+      }
+    } else if (status === 'Delivered') {
+      if (shipment.shipper) {
+        await createNotification(req, shipment.shipper, { title: 'Shipment delivered', message: `Shipment ${shipment.shipmentId} has been successfully delivered. Remaining payment is now available.`, category: 'Payments' });
+      }
+      if (shipment.driver) {
+        await createNotification(req, shipment.driver, { title: 'Shipment delivered', message: `Shipment ${shipment.shipmentId} delivered. Waiting for final payment.`, category: 'Payments' });
+      }
+    } else if (status === 'In Transit') {
+      if (shipment.shipper) {
+        await createNotification(req, shipment.shipper, { title: 'Journey Started', message: `Driver has started the journey for shipment ${shipment.shipmentId}.`, category: 'Shipments' });
+      }
+    }
+
+    res.json(shipment);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 const updateShipmentStatus = async (req, res) => {
   const { status, currentLocation, note } = req.body;
   try {
     const shipment = await Shipment.findOne({ _id: req.params.id || req.params.shipmentId, isDeleted: { $ne: true } });
     if (!shipment) return res.status(404).json({ message: 'Not found' });
 
-    // Authorization: Only the assigned driver can update the status
-    if (req.user.role === 'driver' && shipment.driver?.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Only the assigned driver can update tracking' });
+    // 8. Detailed server-side logging
+    console.log('--- SHIPMENT STATUS UPDATE REQUEST ---');
+    console.log(`req.user.id: ${req.user?._id}`);
+    console.log(`req.user.role: ${req.user?.role}`);
+    console.log(`shipment.driverId: ${shipment.driver}`);
+    console.log(`shipment.status: ${shipment.status}`);
+    console.log(`shipment.paymentStatus: ${shipment.paymentStatus}`);
+    console.log('--------------------------------------');
+
+    // 5. Organization accounts remain read-only
+    if (req.user?.role !== 'driver') {
+      return res.status(403).json({ message: `Authorization Failed: User role is '${req.user?.role}', but organizations have read-only tracking access. Only drivers can update status.` });
     }
-    if (req.user.role !== 'driver') {
-      return res.status(403).json({ message: 'Organizations have read-only tracking access' });
+
+    // 4. Shipment status update APIs only allow the assigned driver to update tracking
+    // 6. Ensure the authorization check compares shipment.driverId with req.user.id correctly.
+    if (!shipment.driver || shipment.driver.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: `Authorization Failed: You are not the assigned driver for this shipment.` });
+    }
+
+    // 7. Verify that the shipment is in a valid state before allowing status updates
+    if (shipment.status === 'Pending' || shipment.paymentStatus === 'Pending Advance') {
+      return res.status(400).json({ message: `State Error: Cannot update tracking status before the Advance Payment is completed and a driver has accepted.` });
     }
 
     const ADVANCED_STATUS_ORDER = [
@@ -107,7 +172,8 @@ const updateShipmentStatus = async (req, res) => {
       'In Transit',
       'Near Destination',
       'Delivered',
-      'Final Payment Completed'
+      'Final Payment Completed',
+      'Shipment Completed'
     ];
 
     const isNewStatus = ADVANCED_STATUS_ORDER.includes(status);
@@ -150,10 +216,21 @@ const updateShipmentStatus = async (req, res) => {
     
     // Notifications logic (only trigger once for overlapping statuses)
     if (isOldStatus || isNewStatus) {
+      const getNotifText = (s) => {
+        switch(s) {
+          case 'Pickup Started': return 'Driver started pickup.';
+          case 'Loaded': return 'Goods loaded successfully.';
+          case 'In Transit': return 'Shipment is now in transit.';
+          case 'Near Destination': return 'Driver is near destination.';
+          default: return `Shipment status updated to ${s}.`;
+        }
+      };
+
       if (status === 'Delivered') {
-        await createNotification(req, [shipment.shipper, shipment.driver].filter(Boolean), {
+        // Notify Shipper
+        await createNotification(req, shipment.shipper, {
           title: 'Shipment Delivered',
-          message: `Shipment to ${shipment.drop} has been delivered successfully.`,
+          message: `Shipment delivered successfully. Final payment is now due.`,
           type: 'SUCCESS',
           category: 'Shipments',
           priority: 'High',
@@ -161,10 +238,21 @@ const updateShipmentStatus = async (req, res) => {
           entityType: 'Shipment',
           link: '/shipments'
         });
+        // Notify Driver
+        await createNotification(req, shipment.driver, {
+          title: 'Shipment Delivered',
+          message: `Shipment delivered successfully. Waiting for final payment.`,
+          type: 'SUCCESS',
+          category: 'Shipments',
+          priority: 'High',
+          relatedEntityId: shipment._id,
+          entityType: 'Shipment',
+          link: '/driver-trips'
+        });
       } else {
         await createNotification(req, shipment.shipper, {
           title: `Shipment ${status}`,
-          message: `Shipment status updated to ${status}.`,
+          message: getNotifText(status),
           type: 'INFO',
           category: 'Shipments',
           priority: 'Medium',
@@ -490,7 +578,7 @@ const deleteShipment = async (req, res) => {
   }
 };
 
-module.exports = { createShipment, getMyShipments, getShipmentById, updateShipmentStatus, getDashboardStats, getAvailableShipments, acceptShipment,  getDriverStats,
+module.exports = { createShipment, getMyShipments, getShipmentById, updateShipmentStatus, demoUpdateStatus, getDashboardStats, getAvailableShipments, acceptShipment,  getDriverStats,
   updateLocation,
   getShipperAnalytics,
   updateShipment,

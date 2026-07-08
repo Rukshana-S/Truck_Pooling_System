@@ -12,16 +12,27 @@ import ReportTemplate from '@/components/ReportTemplate';
 
 // Helper for the visual Payment Timeline
 const getPaymentStages = (payment) => {
-  const isAdvancePaid = payment.type === 'Advance' && payment.status !== 'Pending Advance' || payment.shipmentId?.paymentStatus !== 'Pending Advance';
-  const isDelivered = payment.shipmentId?.status === 'Delivered';
-  const isFullyPaid = payment.shipmentId?.paymentStatus === 'Fully Paid' || (payment.type === 'Final' && payment.status === 'Fully Paid');
+  const s = payment.shipmentId || {};
+  
+  const isFullyPaid = s.paymentStatus === 'Fully Paid' || 
+                      (payment.type === 'Final' && payment.status === 'Fully Paid') || 
+                      s.currentStatus === 'Shipment Completed' || 
+                      s.currentStatus === 'Final Payment Completed';
+                      
+  const isDelivered = isFullyPaid || 
+                      s.status === 'Delivered' || 
+                      s.currentStatus === 'Delivered';
+                      
+  const isAdvancePaid = isDelivered || 
+                        s.paymentStatus !== 'Pending Advance' || 
+                        (payment.type === 'Advance' && payment.status !== 'Pending Advance');
 
   return [
     { label: 'Shipment Created', icon: 'fa-box', state: 'completed' },
     { label: 'Advance Paid', icon: 'fa-money-bill-wave', state: isAdvancePaid ? 'completed' : 'active' },
     { label: 'In Transit', icon: 'fa-truck-fast', state: isDelivered ? 'completed' : (isAdvancePaid ? 'active' : 'pending') },
     { label: 'Delivered', icon: 'fa-house-circle-check', state: isDelivered ? 'completed' : 'pending' },
-    { label: 'Final Payment', icon: 'fa-check-double', state: isFullyPaid ? 'completed' : (isDelivered ? 'active' : 'pending') }
+    { label: 'Final Payment & Receipt', icon: 'fa-check-double', state: isFullyPaid ? 'completed' : (isDelivered ? 'active' : 'pending') }
   ];
 };
 

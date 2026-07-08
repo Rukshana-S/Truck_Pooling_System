@@ -45,7 +45,8 @@ const shipmentSchema = new mongoose.Schema(
         'In Transit',
         'Near Destination',
         'Delivered',
-        'Final Payment Completed'
+        'Final Payment Completed',
+        'Shipment Completed'
       ],
       default: 'Pending'
     },

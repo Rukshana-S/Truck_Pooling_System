@@ -2,6 +2,7 @@ const Payment = require('../models/Payment');
 const Shipment = require('../models/Shipment');
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
+const mongoose = require('mongoose');
 
 let razorpayInstance = null;
 if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
@@ -42,54 +43,80 @@ class PaymentService {
    * Process a payment update and sync with Shipment.
    */
   static async updatePaymentStatus(paymentId, newStatus, paymentMethod, transactionId) {
-    const payment = await Payment.findById(paymentId);
-    if (!payment) {
-      throw new Error('Payment not found');
+    const session = await mongoose.startSession();
+    let updatedPayment = null;
+
+    try {
+      await session.withTransaction(async () => {
+        const payment = await Payment.findById(paymentId).session(session);
+        if (!payment) {
+          throw new Error('Payment not found');
+        }
+
+        payment.status = newStatus;
+        if (paymentMethod) payment.paymentMethod = paymentMethod;
+        if (transactionId) payment.transactionId = transactionId;
+
+        await payment.save({ session });
+
+        // Sync to Shipment
+        // Based on the payment update, we update the shipment's overall payment status and tracking status
+        const shipment = await Shipment.findById(payment.shipmentId).session(session);
+        if (shipment) {
+          if (newStatus === 'Advance Paid') {
+            shipment.paymentStatus = 'Advance Paid';
+            
+            // Also advance the tracking status to unlock driver actions
+            if (!['Advance Paid', 'Pickup Started', 'Loaded', 'In Transit', 'Near Destination', 'Delivered', 'Shipment Completed'].includes(shipment.currentStatus)) {
+              shipment.currentStatus = 'Advance Paid';
+              shipment.statusUpdatedAt = Date.now();
+              shipment.trackingHistory.push({
+                status: 'Advance Paid',
+                note: 'Advance Payment Completed',
+                timestamp: Date.now()
+              });
+            }
+          } else if (newStatus === 'Fully Paid') {
+            shipment.paymentStatus = 'Fully Paid';
+            
+            // Regression check: force timeline integrity if skipped
+            if (!['Delivered', 'Final Payment Completed', 'Shipment Completed'].includes(shipment.currentStatus)) {
+               shipment.trackingHistory.push({
+                 status: 'Delivered',
+                 note: 'Automatically marked as Delivered due to Final Payment',
+                 timestamp: Date.now()
+               });
+               shipment.status = 'Delivered';
+            }
+            
+            // Advance tracking status to Shipment Completed
+            if (shipment.currentStatus !== 'Shipment Completed') {
+              shipment.currentStatus = 'Shipment Completed';
+              shipment.statusUpdatedAt = Date.now();
+              shipment.trackingHistory.push({
+                status: 'Final Payment Completed',
+                note: 'Final Payment Received',
+                timestamp: Date.now()
+              });
+              shipment.trackingHistory.push({
+                status: 'Receipt Generated',
+                note: 'Payment Receipt Generated',
+                timestamp: Date.now()
+              });
+            }
+          } else if (newStatus === 'Pending Final Payment') {
+            shipment.paymentStatus = 'Pending Final Payment';
+          }
+          await shipment.save({ session });
+        }
+
+        updatedPayment = payment;
+      });
+    } finally {
+      session.endSession();
     }
 
-    payment.status = newStatus;
-    if (paymentMethod) payment.paymentMethod = paymentMethod;
-    if (transactionId) payment.transactionId = transactionId;
-
-    await payment.save();
-
-    // Sync to Shipment
-    // Based on the payment update, we update the shipment's overall payment status and tracking status
-    const shipment = await Shipment.findById(payment.shipmentId);
-    if (shipment) {
-      if (newStatus === 'Advance Paid') {
-        shipment.paymentStatus = 'Advance Paid';
-        
-        // Also advance the tracking status to unlock driver actions
-        if (!['Advance Paid', 'Pickup Started', 'Loaded', 'In Transit', 'Near Destination', 'Delivered'].includes(shipment.currentStatus)) {
-          shipment.currentStatus = 'Advance Paid';
-          shipment.statusUpdatedAt = Date.now();
-          shipment.trackingHistory.push({
-            status: 'Advance Paid',
-            note: 'Advance Payment Completed',
-            timestamp: Date.now()
-          });
-        }
-      } else if (newStatus === 'Fully Paid') {
-        shipment.paymentStatus = 'Fully Paid';
-        
-        // Also advance tracking status to Final Payment Completed
-        if (shipment.currentStatus === 'Delivered') {
-          shipment.currentStatus = 'Final Payment Completed';
-          shipment.statusUpdatedAt = Date.now();
-          shipment.trackingHistory.push({
-            status: 'Final Payment Completed',
-            note: 'Final Payment Completed',
-            timestamp: Date.now()
-          });
-        }
-      } else if (newStatus === 'Pending Final Payment') {
-        shipment.paymentStatus = 'Pending Final Payment';
-      }
-      await shipment.save();
-    }
-
-    return payment;
+    return updatedPayment;
   }
 
   /**

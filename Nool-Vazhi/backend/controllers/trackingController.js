@@ -6,8 +6,9 @@ const trackShipment = async (req, res) => {
   try {
     // Try shipment first
     const shipment = await Shipment.findOne({ shipmentId: trackingId })
-      .populate('driver', 'name phone rating')
-      .select('shipmentId pickup drop status currentLocation timeline driver estimatedDelivery');
+      .populate('driver', 'name phone rating vehicleNumber vehicleType')
+      .populate('shipper', 'name businessName')
+      .select('shipmentId pickup drop status currentLocation timeline driver shipper estimatedDelivery currentStatus trackingHistory statusUpdatedAt paymentStatus cost weight goodsType bundles createdAt');
 
     if (shipment) return res.json(shipment);
 
