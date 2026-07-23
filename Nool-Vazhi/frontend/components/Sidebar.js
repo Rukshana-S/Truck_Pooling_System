@@ -143,19 +143,27 @@ export default function Sidebar() {
           {!effectiveCollapsed && <span>Logout</span>}
         </button>
       </div>
-    </aside>
+      </aside>
+      
+      {/* Spacer to push main content since sidebar is fixed */}
+      {!isMobile && (
+        <div style={{ width: collapsed ? 72 : 240, flexShrink: 0, transition: 'width 0.25s' }} />
+      )}
     </>
   );
 }
 
 const styles = {
   aside: {
-    position: 'sticky',
+    position: 'fixed',
     top: 0,
+    left: 0,
     height: '100vh',
     flexShrink: 0,
     transition: 'width 0.25s',
-    overflow: 'hidden',
+    overflowY: 'auto',
+    overflowX: 'hidden',
+    zIndex: 1000,
   },
   bgWrap: {
     position: 'absolute',

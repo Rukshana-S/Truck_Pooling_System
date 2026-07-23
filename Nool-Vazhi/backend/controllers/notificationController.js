@@ -34,12 +34,17 @@ const markAsRead = async (req, res) => {
 
 const markSingleAsRead = async (req, res) => {
   try {
+    console.log(`[DEBUG] markSingleAsRead called with id: ${req.params.id}, by user: ${req.user._id}`);
     const notification = await Notification.findOneAndUpdate(
       { _id: req.params.id, user: req.user._id, isDeleted: { $ne: true } },
       { read: true },
       { new: true }
     );
-    if (!notification) return res.status(404).json({ message: 'Notification not found' });
+    if (!notification) {
+      console.log(`[DEBUG] Notification not found for id: ${req.params.id}, user: ${req.user._id}`);
+      return res.status(404).json({ message: 'Notification not found' });
+    }
+    console.log(`[DEBUG] Successfully marked as read: ${notification._id}`);
     res.json(notification);
   } catch (err) {
     handleError(res, err);

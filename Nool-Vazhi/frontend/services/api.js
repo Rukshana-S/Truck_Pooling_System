@@ -42,6 +42,7 @@ export const shipmentAPI = {
 export const trackingAPI = {
   track: (id) => API.get(`/tracking/${id}`),
   updateStatus: (id, data) => API.put(`/tracking/${id}/status`, data),
+  updateLocation: (id, data) => API.put(`/tracking/${id}/location`, data),
 };
 
 export const pricingAPI = {

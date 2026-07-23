@@ -1,8 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { io } from 'socket.io-client';
-import { trackingAPI } from '@/services/api';
+import { trackingAPI, paymentAPI } from '@/services/api';
 import { toast } from 'react-hot-toast';
 import dynamic from 'next/dynamic';
 import Sidebar from '@/components/Sidebar';
@@ -47,20 +47,24 @@ function deduplicateTimeline(events) {
   return [...seen.values()].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 }
 
-const STATUS_STAGES = [
+const ADVANCED_STATUS_STAGES = [
+  { label: 'Pending', icon: 'fa-box' },
   { label: 'Accepted', icon: 'fa-handshake' },
+  { label: 'Advance Paid', icon: 'fa-money-bill-wave' },
   { label: 'Pickup Started', icon: 'fa-truck-arrow-right' },
   { label: 'In Transit', icon: 'fa-truck-fast' },
   { label: 'Near Destination', icon: 'fa-location-dot' },
   { label: 'Delivered', icon: 'fa-house-circle-check' },
+  { label: 'Final Payment Completed', icon: 'fa-check-double' },
+  { label: 'Shipment Completed', icon: 'fa-file-invoice-dollar' }
 ];
 
 function getStageState(currentStatus, stageLabel) {
-  const idx = STATUS_STAGES.findIndex(s => s.label === stageLabel);
-  const cur = STATUS_STAGES.findIndex(s => s.label === currentStatus);
-  if (cur === -1) return 'pending';
-  if (idx < cur) return 'completed';
-  if (idx === cur) return 'active';
+  const currentIndex = ADVANCED_STATUS_STAGES.findIndex(s => s.label === (currentStatus || 'Pending'));
+  const stageIndex = ADVANCED_STATUS_STAGES.findIndex(s => s.label === stageLabel);
+  
+  if (stageIndex < currentIndex) return 'completed';
+  if (stageIndex === currentIndex) return 'active';
   return 'pending';
 }
 
@@ -85,6 +89,7 @@ export default function OrgTracking() {
   const [dropCoords, setDropCoords] = useState(null);
   const [geocoding, setGeocoding] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(null);
+  const prevStatusRef = useRef(null);
 
   useEffect(() => {
     const fetchShipment = async () => {
@@ -93,6 +98,7 @@ export default function OrgTracking() {
         const data = res.data;
         setShipment(data);
         setCurrentStatus(data.currentStatus || data.status);
+        prevStatusRef.current = data.currentStatus || data.status;
 
         // Deduplicate the fetched timeline
         const raw = data.timeline || [];
@@ -129,19 +135,26 @@ export default function OrgTracking() {
     });
 
     socket.on('shipment_status_update', (data) => {
-      const newStatus = data.status;
-      setCurrentStatus(newStatus);
-      setShipment(prev => prev ? { ...prev, currentStatus: newStatus, status: newStatus } : prev);
-      // Add new event and re-deduplicate so no duplicates accumulate live
-      setTimeline(prev => deduplicateTimeline([
-        ...prev,
-        { status: newStatus, timestamp: data.timestamp, note: `Status updated to ${newStatus}` }
-      ]));
-      toast.success(`Shipment: ${newStatus}`);
+      if (data.status !== prevStatusRef.current) {
+        const newStatus = data.status;
+        setCurrentStatus(newStatus);
+        prevStatusRef.current = newStatus;
+        setShipment(prev => prev ? { ...prev, currentStatus: newStatus, status: newStatus } : prev);
+        // Add new event and re-deduplicate so no duplicates accumulate live
+        setTimeline(prev => deduplicateTimeline([
+          ...prev,
+          { status: newStatus, timestamp: data.timestamp, note: `Status updated to ${newStatus}` }
+        ]));
+        toast.success(`Shipment: ${newStatus}`);
+      }
       if (data.lat && data.lng) setDriverLocation([data.lat, data.lng]);
     });
 
-    return () => socket.disconnect();
+    return () => {
+      socket.off('driver_location_update');
+      socket.off('shipment_status_update');
+      socket.disconnect();
+    };
   }, [id]);
 
   if (loading) return (
@@ -314,12 +327,12 @@ export default function OrgTracking() {
             Journey Progress
           </p>
           <div className="responsive-table-wrap" style={{ border: 'none', boxShadow: 'none', marginBottom: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', minWidth: 440, paddingBottom: 4 }}>
-              {STATUS_STAGES.map((stage, idx) => {
+            <div style={{ display: 'flex', alignItems: 'flex-start', minWidth: 900, paddingBottom: 4 }}>
+              {ADVANCED_STATUS_STAGES.map((stage, idx) => {
                 const state = getStageState(currentStatus, stage.label);
                 return (
                   <div key={stage.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, minWidth: 88, position: 'relative' }}>
-                    {idx < STATUS_STAGES.length - 1 && (
+                    {idx < ADVANCED_STATUS_STAGES.length - 1 && (
                       <div style={{
                         position: 'absolute', top: 20, left: '50%', width: '100%', height: 3, zIndex: 1,
                         background: state === 'completed' ? '#22c55e' : '#e2e8f0',
@@ -336,12 +349,49 @@ export default function OrgTracking() {
                       <i className={`fa-solid ${stage.icon}`}></i>
                     </div>
                     <p style={{
-                      fontSize: 10, textAlign: 'center', marginTop: 7, whiteSpace: 'nowrap', fontWeight: 600,
+                      fontSize: 10, textAlign: 'center', marginTop: 7, whiteSpace: 'normal', fontWeight: 600, maxWidth: 80, lineHeight: 1.2,
                       color: state === 'completed' ? '#16a34a' : state === 'active' ? '#1E3A8A' : '#94a3b8',
                     }}>{stage.label}</p>
                   </div>
                 );
               })}
+            </div>
+          </div>
+        </div>
+
+        {/* Payment Actions */}
+        <div className="card" style={{ padding: '20px 24px', marginTop: 20 }}>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1e293b', marginBottom: 16, borderBottom: '1px solid #e2e8f0', paddingBottom: 10 }}>
+            <i className="fa-solid fa-wallet" style={{ color: '#16a34a', marginRight: 8 }}></i> Payment Actions
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '12px 16px', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#475569' }}>10% Advance Payment</span>
+              {shipment.paymentStatus === 'Pending Advance' ? (
+                <button 
+                  onClick={() => window.location.href = '/payments'} 
+                  disabled={currentStatus === 'Pending'} 
+                  className="btn-blue" 
+                  style={{ padding: '8px 20px', fontSize: 13, opacity: currentStatus === 'Pending' ? 0.5 : 1 }}>
+                  Pay ₹{Math.round((shipment.cost?.total || 0) * 0.1)}
+                </button>
+              ) : (
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#16a34a' }}><i className="fa-solid fa-check"></i> Paid</span>
+              )}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '12px 16px', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#475569' }}>90% Final Payment</span>
+              {shipment.paymentStatus !== 'Fully Paid' ? (
+                <button 
+                  onClick={() => window.location.href = '/payments'} 
+                  disabled={currentStatus !== 'Delivered'} 
+                  className="btn-blue" 
+                  style={{ padding: '8px 20px', fontSize: 13, opacity: currentStatus !== 'Delivered' ? 0.5 : 1 }}>
+                  Pay ₹{Math.round((shipment.cost?.total || 0) * 0.9)}
+                </button>
+              ) : (
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#16a34a' }}><i className="fa-solid fa-check-double"></i> Paid</span>
+              )}
             </div>
           </div>
         </div>

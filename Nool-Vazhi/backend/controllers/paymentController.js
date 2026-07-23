@@ -75,11 +75,16 @@ const createPayment = async (req, res) => {
         });
       }
 
-      return res.status(409).json({ 
-        success: false, 
-        message: 'Payment already exists for this shipment.',
-        paymentId: existingPayment._id.toString(),
-        existingPayment
+      return res.status(200).json({ 
+        success: true, 
+        message: 'Payment order already generated.',
+        data: {
+          payment: existingPayment,
+          razorpayOrder: {
+            id: existingPayment.razorpayOrderId,
+            amount: existingPayment.amount * 100
+          }
+        }
       });
     }
 

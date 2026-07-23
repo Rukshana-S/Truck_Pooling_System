@@ -83,12 +83,17 @@ export const NotificationProvider = ({ children }) => {
   };
   
   const markSingleAsRead = async (id) => {
+    console.log("markSingleAsRead called with id:", id);
+    if (!id) {
+       console.error("markSingleAsRead called with undefined/falsy id");
+       return;
+    }
     try {
       await notificationAPI.markSingleAsRead(id);
       setUnreadCount(prev => Math.max(0, prev - 1));
       setNotifications((prev) => prev.map(n => n._id === id ? { ...n, read: true } : n));
     } catch (err) {
-      console.error(err);
+      console.error("markSingleAsRead failed:", err.message, err.response?.data);
     }
   };
 

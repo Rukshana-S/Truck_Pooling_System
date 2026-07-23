@@ -41,7 +41,6 @@ const shipmentSchema = new mongoose.Schema(
         'Accepted',
         'Advance Paid',
         'Pickup Started',
-        'Loaded',
         'In Transit',
         'Near Destination',
         'Delivered',

@@ -23,7 +23,6 @@ const ADVANCED_STATUS_STAGES = [
   { label: 'Accepted', icon: 'fa-handshake' },
   { label: 'Advance Paid', icon: 'fa-money-bill-wave' },
   { label: 'Pickup Started', icon: 'fa-truck-arrow-right' },
-  { label: 'Loaded', icon: 'fa-boxes-stacked' },
   { label: 'In Transit', icon: 'fa-truck-fast' },
   { label: 'Near Destination', icon: 'fa-location-dot' },
   { label: 'Delivered', icon: 'fa-house-circle-check' },
@@ -45,8 +44,7 @@ const getAdvancedStageState = (currentStatus, stageLabel) => {
 const getNextAction = (status) => {
   switch (status || 'Pending') {
     case 'Advance Paid': return { label: 'Start Pickup', next: 'Pickup Started', icon: 'fa-truck-arrow-right' };
-    case 'Pickup Started': return { label: 'Load Goods', next: 'Loaded', icon: 'fa-boxes-stacked' };
-    case 'Loaded': return { label: 'Start Journey', next: 'In Transit', icon: 'fa-truck-fast' };
+    case 'Pickup Started': return { label: 'Start Journey', next: 'In Transit', icon: 'fa-truck-fast' };
     case 'In Transit': return { label: 'Near Destination', next: 'Near Destination', icon: 'fa-location-dot' };
     case 'Near Destination': return { label: 'Mark Delivered', next: 'Delivered', icon: 'fa-house-circle-check' };
     default: return null;
@@ -169,7 +167,7 @@ export default function Shipments() {
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_TAbp16UZYjRwe5', // Default to test key for safety
-        amount: payload.razorpayOrder.amount,
+        amount: Math.round(payload.razorpayOrder.amount),
         currency: 'INR',
         name: 'Nool-Vazhi',
         description: `Advance Payment for Shipment ${shipment.shipmentId}`,
@@ -261,7 +259,7 @@ export default function Shipments() {
 
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_TAbp16UZYjRwe5',
-        amount: payload.razorpayOrder.amount,
+        amount: Math.round(payload.razorpayOrder.amount),
         currency: 'INR',
         name: 'Nool-Vazhi',
         description: `Final Payment for Shipment ${shipment.shipmentId}`,
