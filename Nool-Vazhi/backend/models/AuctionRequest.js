@@ -28,6 +28,10 @@ const auctionSchema = new mongoose.Schema({
     totalPrice: { type: Number },
     driverStatus: { type: String, enum: ['PENDING', 'ACCEPTED', 'REJECTED'], default: 'PENDING' },
     currentLocation: { type: String, default: '' },
+    currentGpsLocation: {
+      lat: { type: Number },
+      lng: { type: Number }
+    },
     deliveryStatus: {
       type: String,
       enum: ['Pickup Confirmed', 'In Transit', 'Out for Delivery', 'Delivered'],

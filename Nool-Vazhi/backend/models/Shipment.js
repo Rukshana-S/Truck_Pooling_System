@@ -59,6 +59,10 @@ const shipmentSchema = new mongoose.Schema(
     ],
     statusUpdatedAt: { type: Date, default: Date.now },
     currentLocation: { type: String, default: '' },
+    currentGpsLocation: {
+      lat: { type: Number },
+      lng: { type: Number }
+    },
     estimatedDelivery: { type: Date },
     isDeleted: { type: Boolean, default: false },
   },

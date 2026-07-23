@@ -430,7 +430,13 @@ export default function Shipments() {
                 <div style={styles.shipActions}>
                   {isDriver ? (
                     s.status !== 'Delivered' && s.status !== 'Cancelled' ? (
-                      (() => {
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <Link href={`/driver/tracking/${s.shipmentId}`}>
+                          <button className="btn-primary" style={{ padding: '8px 20px', fontSize: 13, background: '#F97316', border: 'none' }}>
+                            <i className="fa-solid fa-location-arrow"></i> Live Tracking
+                          </button>
+                        </Link>
+                      {(() => {
                         const action = getNextAction(s.currentStatus);
                         if (action) {
                           return (
@@ -453,7 +459,8 @@ export default function Shipments() {
                         } else {
                           return null;
                         }
-                      })()
+                      })()}
+                      </div>
                     ) : (
                       s.currentStatus === 'Shipment Completed' || s.currentStatus === 'Final Payment Completed' ? (
                         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -491,9 +498,9 @@ export default function Shipments() {
                     )
                   ) : (
                     <>
-                      <Link href={`/tracking?id=${s.shipmentId}`}>
+                      <Link href={`/tracking/${s.shipmentId}`}>
                         <button className="btn-blue" style={{ padding: '8px 20px', fontSize: 13 }}>
-                          <i className="fa-solid fa-location-dot"></i> Track
+                          <i className="fa-solid fa-location-dot"></i> Live Track
                         </button>
                       </Link>
                       

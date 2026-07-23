@@ -32,6 +32,25 @@ io.on('connection', (socket) => {
   socket.on('leave_auction', (auctionId) => {
     socket.leave(auctionId);
   });
+
+  // GPS Tracking Rooms
+  socket.on('join_tracking', (trackingId) => {
+    socket.join(`track_${trackingId}`);
+  });
+
+  socket.on('leave_tracking', (trackingId) => {
+    socket.leave(`track_${trackingId}`);
+  });
+
+  socket.on('location_update', (data) => {
+    // data: { trackingId, lat, lng, timestamp }
+    socket.to(`track_${data.trackingId}`).emit('driver_location_update', data);
+  });
+
+  socket.on('status_update', (data) => {
+    // data: { trackingId, status, timestamp }
+    socket.to(`track_${data.trackingId}`).emit('shipment_status_update', data);
+  });
 });
 
 // Attach io to req object

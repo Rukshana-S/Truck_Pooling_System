@@ -54,4 +54,65 @@ const trackShipment = async (req, res) => {
   }
 };
 
-module.exports = { trackShipment };
+const updateTrackingStatus = async (req, res) => {
+  const { trackingId } = req.params;
+  const { status, lat, lng, note } = req.body;
+  try {
+    let updated = false;
+
+    // Try shipment first
+    const shipment = await Shipment.findOne({ shipmentId: trackingId });
+    if (shipment) {
+      if (status && shipment.currentStatus !== status) {
+        shipment.currentStatus = status;
+        shipment.statusUpdatedAt = Date.now();
+        shipment.timeline.push({ status, timestamp: Date.now(), note: note || `Status updated to ${status}` });
+        shipment.trackingHistory.push({ status, timestamp: Date.now(), note: note || `Tracking update: ${status}` });
+      }
+      if (lat && lng) {
+        shipment.currentGpsLocation = { lat, lng };
+      }
+      await shipment.save();
+      updated = true;
+    }
+
+    if (!updated) {
+      // Try auction
+      const auction = await AuctionRequest.findOne({ auctionId: trackingId });
+      if (auction) {
+        // Find accepted driver
+        const selIndex = auction.selections.findIndex(s => s.driverStatus === 'ACCEPTED');
+        if (selIndex !== -1) {
+          if (status && auction.selections[selIndex].deliveryStatus !== status) {
+            auction.selections[selIndex].deliveryStatus = status;
+            auction.selections[selIndex].timeline.push({
+              status,
+              location: `${lat},${lng}`,
+              timestamp: Date.now(),
+              note: note || `Status updated to ${status}`
+            });
+          }
+          if (lat && lng) {
+            auction.selections[selIndex].currentGpsLocation = { lat, lng };
+          }
+          await auction.save();
+          updated = true;
+        }
+      }
+    }
+
+    if (updated) {
+      // Emit via socket if accessible
+      if (req.io) {
+        req.io.to(`track_${trackingId}`).emit('shipment_status_update', { trackingId, status, timestamp: Date.now(), lat, lng });
+      }
+      res.json({ message: 'Tracking updated successfully' });
+    } else {
+      res.status(404).json({ message: 'Tracking ID not found or no accepted driver' });
+    }
+  } catch (err) {
+    handleError(res, err);
+  }
+};
+
+module.exports = { trackShipment, updateTrackingStatus };
